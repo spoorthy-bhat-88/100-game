@@ -1,0 +1,15 @@
+{
+  "name": "100-game-server",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Server for The 100 Game multiplayer",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "socket.io": "^4.6.1",
+    "cors": "^2.8.5"
+  }
+}
