@@ -17,6 +17,7 @@ function App() {
   const [gameState, setGameState] = useState(null);
   const [numPlayers, setNumPlayers] = useState(2);
   const [selectedCard, setSelectedCard] = useState(null);
+  const [customHint, setCustomHint] = useState('');
   
   // Multiplayer state
   const [screen, setScreen] = useState('menu'); // 'menu', 'lobby', 'game'
@@ -176,23 +177,25 @@ function App() {
     }
   };
 
-  const handleSendHint = (hintType, pileType) => {
-    if (!gameState) return;
-
-    const isAscending = pileType.includes('ascending');
-    const pileEmoji = isAscending ? '⬆️' : '⬇️';
-    const pileLabel = pileType.includes('1') ? '1' : '2';
-    const pileName = `${isAscending ? 'Ascending' : 'Descending'} Pile ${pileLabel}`;
-    const hintText = `${hintType} to ${pileEmoji} ${pileName}`;
+  const handleSendHint = () => {
+    if (!gameState || !customHint.trim()) return;
+    
+    const text = customHint.trim();
+    // Block hints containing numbers
+    if (/\d/.test(text)) {
+      alert('Hints cannot contain numbers!');
+      return;
+    }
 
     const hint = {
       player: playerName || `Player ${myPlayerIndex + 1}`,
-      text: hintText,
+      text: text,
       timestamp: Date.now()
     };
 
     const newGameState = addHint(gameState, hint.player, hint.text);
     setGameState(newGameState);
+    setCustomHint('');
     
     // Broadcast updated game state to other players
     socket.emit('game-action', { roomCode, gameState: newGameState });
@@ -292,7 +295,7 @@ function App() {
               <li>⬇️ <strong>Descending piles (×2):</strong> Play cards lower than the top card (start at 100)</li>
               <li>🔟 <strong>Special:</strong> Can also play a card exactly 10 less than an ascending pile, or 10 more than a descending pile</li>
               <li>🔄 On your turn: play one card on any pile, then draw one card</li>
-              <li>💡 Give hints anytime: "close", "very close" to any pile</li>
+              <li>💡 Give custom hints anytime (no numbers allowed!)</li>
               <li>🏆 <strong>Win:</strong> Deck and all hands empty</li>
               <li>💀 <strong>Lose:</strong> If any player can't make a legal move on their turn</li>
             </ul>
@@ -428,8 +431,6 @@ function App() {
                   isCurrentPlayer={index === gameState.currentPlayer}
                   selectedCard={index === myPlayerIndex ? selectedCard : null}
                   onCardSelect={handleCardSelect}
-                  canPlayOnAscending={canPlayOnAscending}
-                  canPlayOnDescending={canPlayOnDescending}
                   cardCount={hand.length}
                   isMyHand={index === myPlayerIndex}
                 />
@@ -443,107 +444,52 @@ function App() {
           {/* Hint System */}
           <div className="hint-section">
             <h4 className="hint-title">💡 Send Hints to Other Players</h4>
-            <p className="hint-description">Give teammates clues about your cards</p>
+            <p className="hint-description">Give teammates clues about your cards (no numbers allowed)</p>
             <div className="hint-form">
-              <div className="hint-group">
-                <label className="hint-label">⬆️ Ascending Pile 1</label>
-                <div className="hint-buttons">
-                  <button 
-                    type="button" 
-                    className="hint-button close"
-                    onClick={() => handleSendHint('close', 'ascending1')}
-                    title="Signal you have a card close to ascending pile 1"
-                  >
-                    Close
-                  </button>
-                  <button 
-                    type="button" 
-                    className="hint-button very-close"
-                    onClick={() => handleSendHint('very close', 'ascending1')}
-                    title="Signal you have a card very close to ascending pile 1"
-                  >
-                    Very Close
-                  </button>
-                </div>
-              </div>
-              <div className="hint-group">
-                <label className="hint-label">⬆️ Ascending Pile 2</label>
-                <div className="hint-buttons">
-                  <button 
-                    type="button" 
-                    className="hint-button close"
-                    onClick={() => handleSendHint('close', 'ascending2')}
-                    title="Signal you have a card close to ascending pile 2"
-                  >
-                    Close
-                  </button>
-                  <button 
-                    type="button" 
-                    className="hint-button very-close"
-                    onClick={() => handleSendHint('very close', 'ascending2')}
-                    title="Signal you have a card very close to ascending pile 2"
-                  >
-                    Very Close
-                  </button>
-                </div>
-              </div>
-              <div className="hint-group">
-                <label className="hint-label">⬇️ Descending Pile 1</label>
-                <div className="hint-buttons">
-                  <button 
-                    type="button" 
-                    className="hint-button close"
-                    onClick={() => handleSendHint('close', 'descending1')}
-                    title="Signal you have a card close to descending pile 1"
-                  >
-                    Close
-                  </button>
-                  <button 
-                    type="button" 
-                    className="hint-button very-close"
-                    onClick={() => handleSendHint('very close', 'descending1')}
-                    title="Signal you have a card very close to descending pile 1"
-                  >
-                    Very Close
-                  </button>
-                </div>
-              </div>
-              <div className="hint-group">
-                <label className="hint-label">⬇️ Descending Pile 2</label>
-                <div className="hint-buttons">
-                  <button 
-                    type="button" 
-                    className="hint-button close"
-                    onClick={() => handleSendHint('close', 'descending2')}
-                    title="Signal you have a card close to descending pile 2"
-                  >
-                    Close
-                  </button>
-                  <button 
-                    type="button" 
-                    className="hint-button very-close"
-                    onClick={() => handleSendHint('very close', 'descending2')}
-                    title="Signal you have a card very close to descending pile 2"
-                  >
-                    Very Close
-                  </button>
-                </div>
+              <div className="custom-hint-group">
+                <input
+                  type="text"
+                  className="custom-hint-input"
+                  placeholder="Type your hint here..."
+                  value={customHint}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    // Block numbers from being typed
+                    if (!/\d/.test(value)) {
+                      setCustomHint(value);
+                    }
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      handleSendHint();
+                    }
+                  }}
+                  maxLength={100}
+                />
+                <button 
+                  type="button" 
+                  className="send-hint-button"
+                  onClick={handleSendHint}
+                  disabled={!customHint.trim()}
+                >
+                  Send Hint
+                </button>
               </div>
             </div>
-            
-            {gameState.playLog && gameState.playLog.length > 0 && (
-              <div className="play-log">
-                <h4>Play Log</h4>
-                <div className="log-list">
-                  {gameState.playLog.slice(-15).reverse().map((entry, idx) => (
-                    <div key={entry.timestamp} className={`log-entry ${entry.type}`}>
-                      {entry.text}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
+            
+          {gameState.playLog && gameState.playLog.length > 0 && (
+            <div className="play-log">
+              <h4>Play Log</h4>
+              <div className="log-list">
+                {gameState.playLog.slice(-15).reverse().map((entry, idx) => (
+                  <div key={entry.timestamp} className={`log-entry ${entry.type}`}>
+                    {entry.text}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
