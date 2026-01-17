@@ -418,7 +418,7 @@ function App() {
         {/* Second Column - Players' Hands */}
         <div className="players-column">
           <div className="players-container">
-            {gameState.hands.map((hand, index) => {
+            {gameState.hands && Array.isArray(gameState.hands) && gameState.hands.map((hand, index) => {
               const player = roomPlayers.find((_, idx) => idx === index);
               const playerDisplayName = player ? player.name : `Player ${index + 1}`;
               
@@ -478,7 +478,7 @@ function App() {
             </div>
           </div>
             
-          {gameState.playLog && gameState.playLog.length > 0 && (
+          {gameState.playLog && Array.isArray(gameState.playLog) && gameState.playLog.length > 0 && (
             <div className="play-log">
               <h4>Play Log</h4>
               <div className="log-list">
