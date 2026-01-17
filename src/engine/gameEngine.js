@@ -46,17 +46,19 @@ export function isValidPlay(card, pileTop, isAscending) {
   }
 }
 
-export function hasLegalMove(hand, ascendingTop, descendingTop) {
+export function hasLegalMove(hand, piles) {
   return hand.some(card => 
-    isValidPlay(card, ascendingTop, true) || 
-    isValidPlay(card, descendingTop, false)
+    isValidPlay(card, piles.ascending1, true) || 
+    isValidPlay(card, piles.ascending2, true) ||
+    isValidPlay(card, piles.descending1, false) || 
+    isValidPlay(card, piles.descending2, false)
   );
 }
 
-export function checkLossCondition(hands, ascendingTop, descendingTop, currentPlayer) {
+export function checkLossCondition(hands, piles, currentPlayer) {
   // Game is lost if the current player has no legal move
   const currentHand = hands[currentPlayer];
-  return currentHand.length > 0 && !hasLegalMove(currentHand, ascendingTop, descendingTop);
+  return currentHand.length > 0 && !hasLegalMove(currentHand, piles);
 }
 
 export function checkWinCondition(hands, deck) {
@@ -71,8 +73,10 @@ export function initializeGame(numPlayers) {
   return {
     deck: remainingDeck,
     hands,
-    ascendingPile: 0,
-    descendingPile: 100,
+    ascending1: 1,
+    ascending2: 1,
+    descending1: 100,
+    descending2: 100,
     currentPlayer: 0,
     numPlayers,
     gameStatus: 'playing', // 'playing', 'won', 'lost'
@@ -82,7 +86,7 @@ export function initializeGame(numPlayers) {
 }
 
 export function playCard(gameState, playerIndex, cardIndex, pileType) {
-  const { hands, deck, ascendingPile, descendingPile, currentPlayer } = gameState;
+  const { hands, deck, ascending1, ascending2, descending1, descending2, currentPlayer } = gameState;
   
   // Validate it's the current player's turn
   if (playerIndex !== currentPlayer) {
@@ -90,8 +94,30 @@ export function playCard(gameState, playerIndex, cardIndex, pileType) {
   }
   
   const card = hands[playerIndex][cardIndex];
-  const pileTop = pileType === 'ascending' ? ascendingPile : descendingPile;
-  const isAscending = pileType === 'ascending';
+  let pileTop;
+  let isAscending;
+  
+  // Determine pile top and direction
+  switch(pileType) {
+    case 'ascending1':
+      pileTop = ascending1;
+      isAscending = true;
+      break;
+    case 'ascending2':
+      pileTop = ascending2;
+      isAscending = true;
+      break;
+    case 'descending1':
+      pileTop = descending1;
+      isAscending = false;
+      break;
+    case 'descending2':
+      pileTop = descending2;
+      isAscending = false;
+      break;
+    default:
+      return { success: false, error: "Invalid pile type!" };
+  }
   
   // Validate the play
   if (!isValidPlay(card, pileTop, isAscending)) {
@@ -111,21 +137,26 @@ export function playCard(gameState, playerIndex, cardIndex, pileType) {
   }
   
   const newDeck = deck.slice(1);
-  const newAscendingPile = pileType === 'ascending' ? card : ascendingPile;
-  const newDescendingPile = pileType === 'descending' ? card : descendingPile;
+  
+  // Update the appropriate pile
+  const newAscending1 = pileType === 'ascending1' ? card : ascending1;
+  const newAscending2 = pileType === 'ascending2' ? card : ascending2;
+  const newDescending1 = pileType === 'descending1' ? card : descending1;
+  const newDescending2 = pileType === 'descending2' ? card : descending2;
   
   // Move to next player
   const nextPlayer = (currentPlayer + 1) % gameState.numPlayers;
   
   // Add to play log
-  const pileSymbol = pileType === 'ascending' ? '⬆️' : '⬇️';
+  const pileSymbol = isAscending ? '⬆️' : '⬇️';
+  const pileLabel = pileType.includes('1') ? '1' : '2';
   const logEntry = {
     type: 'play',
     player: playerIndex,
     card: card,
     pile: pileType,
     timestamp: Date.now(),
-    text: `Player ${playerIndex + 1} played ${card} on ${pileSymbol} ${pileType} pile`
+    text: `Player ${playerIndex + 1} played ${card} on ${pileSymbol} ${isAscending ? 'Ascending' : 'Descending'} Pile ${pileLabel}`
   };
   
   // Create new game state
@@ -133,16 +164,25 @@ export function playCard(gameState, playerIndex, cardIndex, pileType) {
     ...gameState,
     hands: newHands,
     deck: newDeck,
-    ascendingPile: newAscendingPile,
-    descendingPile: newDescendingPile,
+    ascending1: newAscending1,
+    ascending2: newAscending2,
+    descending1: newDescending1,
+    descending2: newDescending2,
     currentPlayer: nextPlayer,
     playLog: [...gameState.playLog, logEntry]
   };
   
   // Check win/loss conditions
+  const piles = {
+    ascending1: newAscending1,
+    ascending2: newAscending2,
+    descending1: newDescending1,
+    descending2: newDescending2
+  };
+  
   if (checkWinCondition(newHands, newDeck)) {
     newGameState.gameStatus = 'won';
-  } else if (checkLossCondition(newHands, newAscendingPile, newDescendingPile, nextPlayer)) {
+  } else if (checkLossCondition(newHands, piles, nextPlayer)) {
     newGameState.gameStatus = 'lost';
   }
   

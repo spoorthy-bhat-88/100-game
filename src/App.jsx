@@ -153,14 +153,16 @@ function App() {
       let updatedGameState = { ...result.newGameState };
       if (updatedGameState.playLog && updatedGameState.playLog.length > 0) {
         const currentPlayerName = roomPlayers[myPlayerIndex]?.name || `Player ${myPlayerIndex + 1}`;
-        const pileSymbol = pileType === 'ascending' ? '⬆️' : '⬇️';
+        const isAscending = pileType.includes('ascending');
+        const pileSymbol = isAscending ? '⬆️' : '⬇️';
+        const pileLabel = pileType.includes('1') ? '1' : '2';
         const cardPlayed = gameState.hands[myPlayerIndex][selectedCard];
         
         // Create a new log array with updated last entry
         const updatedLog = [...updatedGameState.playLog];
         updatedLog[updatedLog.length - 1] = {
           ...updatedLog[updatedLog.length - 1],
-          text: `${currentPlayerName} played ${cardPlayed} on ${pileSymbol} ${pileType} pile`
+          text: `${currentPlayerName} played ${cardPlayed} on ${pileSymbol} ${isAscending ? 'Ascending' : 'Descending'} Pile ${pileLabel}`
         };
         updatedGameState = { ...updatedGameState, playLog: updatedLog };
       }
@@ -177,9 +179,11 @@ function App() {
   const handleSendHint = (hintType, pileType) => {
     if (!gameState) return;
 
-    const pileEmoji = pileType === 'ascending' ? '⬆️' : '⬇️';
-    const pileName = pileType === 'ascending' ? 'ascending' : 'descending';
-    const hintText = `${hintType} to ${pileEmoji} ${pileName} pile`;
+    const isAscending = pileType.includes('ascending');
+    const pileEmoji = isAscending ? '⬆️' : '⬇️';
+    const pileLabel = pileType.includes('1') ? '1' : '2';
+    const pileName = `${isAscending ? 'Ascending' : 'Descending'} Pile ${pileLabel}`;
+    const hintText = `${hintType} to ${pileEmoji} ${pileName}`;
 
     const hint = {
       player: playerName || `Player ${myPlayerIndex + 1}`,
@@ -194,12 +198,33 @@ function App() {
     socket.emit('game-action', { roomCode, gameState: newGameState });
   };
 
-  const canPlayOnAscending = (card) => {
-    return gameState && isValidPlay(card, gameState.ascendingPile, true);
-  };
-
-  const canPlayOnDescending = (card) => {
-    return gameState && isValidPlay(card, gameState.descendingPile, false);
+  const canPlayOnPile = (card, pileType) => {
+    if (!gameState) return false;
+    let pileTop;
+    let isAscending;
+    
+    switch(pileType) {
+      case 'ascending1':
+        pileTop = gameState.ascending1;
+        isAscending = true;
+        break;
+      case 'ascending2':
+        pileTop = gameState.ascending2;
+        isAscending = true;
+        break;
+      case 'descending1':
+        pileTop = gameState.descending1;
+        isAscending = false;
+        break;
+      case 'descending2':
+        pileTop = gameState.descending2;
+        isAscending = false;
+        break;
+      default:
+        return false;
+    }
+    
+    return isValidPlay(card, pileTop, isAscending);
   };
 
   // Menu Screen
@@ -263,11 +288,11 @@ function App() {
             <ul>
               <li>🎯 <strong>Goal:</strong> Play all cards from the deck</li>
               <li>🃏 Each player starts with 4 cards</li>
-              <li>⬆️ <strong>Ascending pile:</strong> Play cards higher than the top card (starts at 0)</li>
-              <li>⬇️ <strong>Descending pile:</strong> Play cards lower than the top card (starts at 100)</li>
-              <li>🔟 <strong>Special:</strong> Can also play a card exactly 10 less than ascending pile top, or 10 more than descending pile top</li>
-              <li>🔄 On your turn: play one card, then draw one card</li>
-              <li>💡 Give hints anytime: "close", "very close"</li>
+              <li>⬆️ <strong>Ascending piles (×2):</strong> Play cards higher than the top card (start at 1)</li>
+              <li>⬇️ <strong>Descending piles (×2):</strong> Play cards lower than the top card (start at 100)</li>
+              <li>🔟 <strong>Special:</strong> Can also play a card exactly 10 less than an ascending pile, or 10 more than a descending pile</li>
+              <li>🔄 On your turn: play one card on any pile, then draw one card</li>
+              <li>💡 Give hints anytime: "close", "very close" to any pile</li>
               <li>🏆 <strong>Win:</strong> Deck and all hands empty</li>
               <li>💀 <strong>Lose:</strong> If any player can't make a legal move on their turn</li>
             </ul>
@@ -350,18 +375,40 @@ function App() {
         {/* First Column - Piles */}
         <div className="piles-column">
           <div className="piles-container">
-            <Pile
-              type="ascending"
-              topCard={gameState.ascendingPile}
-              canAcceptCard={selectedCardValue !== null && canPlayOnAscending(selectedCardValue)}
-              onCardDrop={() => handlePlayCard('ascending')}
-            />
-            <Pile
-              type="descending"
-              topCard={gameState.descendingPile}
-              canAcceptCard={selectedCardValue !== null && canPlayOnDescending(selectedCardValue)}
-              onCardDrop={() => handlePlayCard('descending')}
-            />
+            <h3>⬆️ Ascending Piles</h3>
+            <div className="pile-row">
+              <Pile
+                type="ascending"
+                topCard={gameState.ascending1}
+                canAcceptCard={selectedCardValue !== null && canPlayOnPile(selectedCardValue, 'ascending1')}
+                onCardDrop={() => handlePlayCard('ascending1')}
+                label="Pile 1"
+              />
+              <Pile
+                type="ascending"
+                topCard={gameState.ascending2}
+                canAcceptCard={selectedCardValue !== null && canPlayOnPile(selectedCardValue, 'ascending2')}
+                onCardDrop={() => handlePlayCard('ascending2')}
+                label="Pile 2"
+              />
+            </div>
+            <h3>⬇️ Descending Piles</h3>
+            <div className="pile-row">
+              <Pile
+                type="descending"
+                topCard={gameState.descending1}
+                canAcceptCard={selectedCardValue !== null && canPlayOnPile(selectedCardValue, 'descending1')}
+                onCardDrop={() => handlePlayCard('descending1')}
+                label="Pile 1"
+              />
+              <Pile
+                type="descending"
+                topCard={gameState.descending2}
+                canAcceptCard={selectedCardValue !== null && canPlayOnPile(selectedCardValue, 'descending2')}
+                onCardDrop={() => handlePlayCard('descending2')}
+                label="Pile 2"
+              />
+            </div>
           </div>
         </div>
 
@@ -399,42 +446,84 @@ function App() {
             <p className="hint-description">Give teammates clues about your cards</p>
             <div className="hint-form">
               <div className="hint-group">
-                <label className="hint-label">⬆️ Ascending Pile</label>
+                <label className="hint-label">⬆️ Ascending Pile 1</label>
                 <div className="hint-buttons">
                   <button 
                     type="button" 
                     className="hint-button close"
-                    onClick={() => handleSendHint('close', 'ascending')}
-                    title="Signal you have a card close to the ascending pile value"
+                    onClick={() => handleSendHint('close', 'ascending1')}
+                    title="Signal you have a card close to ascending pile 1"
                   >
                     Close
                   </button>
                   <button 
                     type="button" 
                     className="hint-button very-close"
-                    onClick={() => handleSendHint('very close', 'ascending')}
-                    title="Signal you have a card very close to the ascending pile value"
+                    onClick={() => handleSendHint('very close', 'ascending1')}
+                    title="Signal you have a card very close to ascending pile 1"
                   >
                     Very Close
                   </button>
                 </div>
               </div>
               <div className="hint-group">
-                <label className="hint-label">⬇️ Descending Pile</label>
+                <label className="hint-label">⬆️ Ascending Pile 2</label>
                 <div className="hint-buttons">
                   <button 
                     type="button" 
                     className="hint-button close"
-                    onClick={() => handleSendHint('close', 'descending')}
-                    title="Signal you have a card close to the descending pile value"
+                    onClick={() => handleSendHint('close', 'ascending2')}
+                    title="Signal you have a card close to ascending pile 2"
                   >
                     Close
                   </button>
                   <button 
                     type="button" 
                     className="hint-button very-close"
-                    onClick={() => handleSendHint('very close', 'descending')}
-                    title="Signal you have a card very close to the descending pile value"
+                    onClick={() => handleSendHint('very close', 'ascending2')}
+                    title="Signal you have a card very close to ascending pile 2"
+                  >
+                    Very Close
+                  </button>
+                </div>
+              </div>
+              <div className="hint-group">
+                <label className="hint-label">⬇️ Descending Pile 1</label>
+                <div className="hint-buttons">
+                  <button 
+                    type="button" 
+                    className="hint-button close"
+                    onClick={() => handleSendHint('close', 'descending1')}
+                    title="Signal you have a card close to descending pile 1"
+                  >
+                    Close
+                  </button>
+                  <button 
+                    type="button" 
+                    className="hint-button very-close"
+                    onClick={() => handleSendHint('very close', 'descending1')}
+                    title="Signal you have a card very close to descending pile 1"
+                  >
+                    Very Close
+                  </button>
+                </div>
+              </div>
+              <div className="hint-group">
+                <label className="hint-label">⬇️ Descending Pile 2</label>
+                <div className="hint-buttons">
+                  <button 
+                    type="button" 
+                    className="hint-button close"
+                    onClick={() => handleSendHint('close', 'descending2')}
+                    title="Signal you have a card close to descending pile 2"
+                  >
+                    Close
+                  </button>
+                  <button 
+                    type="button" 
+                    className="hint-button very-close"
+                    onClick={() => handleSendHint('very close', 'descending2')}
+                    title="Signal you have a card very close to descending pile 2"
                   >
                     Very Close
                   </button>

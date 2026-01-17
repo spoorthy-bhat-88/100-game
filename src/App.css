@@ -396,8 +396,22 @@ body::before {
 .piles-container {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 20px;
   animation: slideUp 0.5s ease 0.1s both;
+}
+
+.piles-container h3 {
+  color: #1e293b;
+  font-size: 14px;
+  font-weight: 700;
+  margin: 0 0 8px 0;
+  text-align: center;
+}
+
+.pile-row {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
 }
 
 /* Hint Section - Compact */

@@ -1,0 +1,20 @@
+{
+  "install": "cd server && npm install",
+  "start": "cd server && npm start",
+  "watch": {
+    "ignore": [
+      "\\.git",
+      "node_modules"
+    ],
+    "install": {
+      "include": [
+        "^server/package\\.json$"
+      ]
+    },
+    "restart": {
+      "include": [
+        "^server/.+\\.js$"
+      ]
+    }
+  }
+}
