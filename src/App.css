@@ -396,21 +396,23 @@ body::before {
 .piles-container {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 12px;
   animation: slideUp 0.5s ease 0.1s both;
 }
 
 .piles-container h3 {
-  color: #1e293b;
-  font-size: 14px;
-  font-weight: 700;
-  margin: 0 0 8px 0;
+  color: #0f172a;
+  font-size: 16px;
+  font-weight: 900;
+  margin: 0 0 6px 0;
   text-align: center;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+  letter-spacing: 0.5px;
 }
 
 .pile-row {
   display: flex;
-  gap: 12px;
+  gap: 10px;
   justify-content: center;
 }
 

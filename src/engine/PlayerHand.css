@@ -42,6 +42,12 @@
   animation: currentPlayerGlow 2s ease-in-out infinite;
 }
 
+.player-hand.current-player .player-info h3 {
+  color: #0f172a;
+  font-weight: 900;
+  text-shadow: 0 1px 3px rgba(255, 255, 255, 0.9);
+}
+
 .player-hand.current-player.other-player {
   background: rgba(59, 130, 246, 0.1);
   border: 2px solid #3b82f6;
@@ -49,6 +55,12 @@
     0 8px 32px rgba(59, 130, 246, 0.4),
     0 0 0 4px rgba(59, 130, 246, 0.1);
   animation: otherPlayerTurnGlow 2s ease-in-out infinite;
+}
+
+.player-hand.current-player.other-player .player-info h3 {
+  color: #0f172a;
+  font-weight: 900;
+  text-shadow: 0 1px 3px rgba(255, 255, 255, 0.9);
 }
 
 @keyframes currentPlayerGlow {

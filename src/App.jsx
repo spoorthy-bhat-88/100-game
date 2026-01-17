@@ -291,7 +291,7 @@ function App() {
             <ul>
               <li>🎯 <strong>Goal:</strong> Play all cards from the deck</li>
               <li>🃏 Each player starts with 4 cards</li>
-              <li>⬆️ <strong>Ascending piles (×2):</strong> Play cards higher than the top card (start at 1)</li>
+              <li>⬆️ <strong>Ascending piles (×2):</strong> Play cards higher than the top card (start at 0)</li>
               <li>⬇️ <strong>Descending piles (×2):</strong> Play cards lower than the top card (start at 100)</li>
               <li>🔟 <strong>Special:</strong> Can also play a card exactly 10 less than an ascending pile, or 10 more than a descending pile</li>
               <li>🔄 On your turn: play one card on any pile, then draw one card</li>

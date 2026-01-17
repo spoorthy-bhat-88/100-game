@@ -8,8 +8,6 @@ function PlayerHand({
   isCurrentPlayer, 
   selectedCard, 
   onCardSelect,
-  canPlayOnAscending,
-  canPlayOnDescending,
   cardCount,
   isMyHand
 }) {
@@ -25,14 +23,11 @@ function PlayerHand({
         <div className="cards">
           {hand.map((card, index) => {
             const isSelected = selectedCard === index;
-            const canPlay = isCurrentPlayer && (
-              canPlayOnAscending(card) || canPlayOnDescending(card)
-            );
             
             return (
               <div
                 key={`${card}-${index}`}
-                className={`card ${isSelected ? 'selected' : ''} ${!canPlay && isCurrentPlayer ? 'unplayable' : ''}`}
+                className={`card ${isSelected ? 'selected' : ''}`}
                 onClick={() => isCurrentPlayer && onCardSelect(index)}
               >
                 <div className="card-number">{card}</div>

@@ -73,8 +73,8 @@ export function initializeGame(numPlayers) {
   return {
     deck: remainingDeck,
     hands,
-    ascending1: 1,
-    ascending2: 1,
+    ascending1: 0,
+    ascending2: 0,
     descending1: 100,
     descending2: 100,
     currentPlayer: 0,
