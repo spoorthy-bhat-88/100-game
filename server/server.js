@@ -91,6 +91,57 @@ io.on('connection', (socket) => {
     console.log(`${playerName} joined room ${roomCode}`);
   });
 
+  // Rejoin an existing room
+  socket.on('rejoin-room', ({ roomCode, playerIndex, playerName }) => {
+    const room = gameRooms.get(roomCode);
+    
+    if (!room) {
+      socket.emit('error', { message: 'Room not found - game may have ended' });
+      // Clear localStorage on client side
+      localStorage.removeItem('roomCode');
+      localStorage.removeItem('playerIndex');
+      localStorage.removeItem('playerName');
+      return;
+    }
+    
+    // Find and update the player's socket ID
+    const player = room.players.find(p => p.playerIndex === playerIndex);
+    
+    if (player) {
+      player.id = socket.id;
+      player.name = playerName;
+    } else {
+      // Player not in room, try to add them back if there's space
+      if (room.players.length >= room.numPlayers) {
+        socket.emit('error', { message: 'Cannot rejoin - room is full' });
+        return;
+      }
+      room.players.push({
+        id: socket.id,
+        name: playerName,
+        playerIndex
+      });
+    }
+    
+    socket.join(roomCode);
+    
+    // Send current game state
+    socket.emit('rejoined', { 
+      gameState: room.gameState,
+      players: room.players,
+      screen: room.started ? 'game' : 'lobby'
+    });
+    
+    // Notify other players
+    io.to(roomCode).emit('room-update', { 
+      players: room.players,
+      numPlayers: room.numPlayers,
+      started: room.started
+    });
+    
+    console.log(`${playerName} rejoined room ${roomCode}`);
+  });
+
   // Start the game
   socket.on('start-game', ({ roomCode, gameState }) => {
     const room = gameRooms.get(roomCode);

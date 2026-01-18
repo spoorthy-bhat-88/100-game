@@ -29,12 +29,34 @@ function App() {
   const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
+    // Try to rejoin from localStorage on mount
+    const savedRoomCode = localStorage.getItem('roomCode');
+    const savedPlayerIndex = localStorage.getItem('playerIndex');
+    const savedPlayerName = localStorage.getItem('playerName');
+    
+    if (savedRoomCode && savedPlayerIndex !== null && savedPlayerName) {
+      setRoomCode(savedRoomCode);
+      setMyPlayerIndex(parseInt(savedPlayerIndex));
+      setPlayerName(savedPlayerName);
+      socket.emit('rejoin-room', { 
+        roomCode: savedRoomCode, 
+        playerIndex: parseInt(savedPlayerIndex),
+        playerName: savedPlayerName
+      });
+    }
+  }, []);
+
+  useEffect(() => {
     // Socket event listeners
     socket.on('room-created', ({ roomCode, playerIndex }) => {
       setRoomCode(roomCode);
       setMyPlayerIndex(playerIndex);
       setIsHost(true);
       setScreen('lobby');
+      // Save to localStorage
+      localStorage.setItem('roomCode', roomCode);
+      localStorage.setItem('playerIndex', playerIndex);
+      localStorage.setItem('playerName', playerName);
     });
 
     socket.on('room-joined', ({ roomCode, playerIndex }) => {
@@ -42,6 +64,10 @@ function App() {
       setMyPlayerIndex(playerIndex);
       setIsHost(false);
       setScreen('lobby');
+      // Save to localStorage
+      localStorage.setItem('roomCode', roomCode);
+      localStorage.setItem('playerIndex', playerIndex);
+      localStorage.setItem('playerName', playerName);
     });
 
     socket.on('room-update', ({ players, numPlayers: total, started }) => {
@@ -52,6 +78,13 @@ function App() {
     socket.on('game-started', ({ gameState: newGameState }) => {
       setGameState(newGameState);
       setScreen('game');
+      setSelectedCard(null);
+    });
+
+    socket.on('rejoined', ({ gameState: newGameState, players, screen: savedScreen }) => {
+      setGameState(newGameState);
+      setRoomPlayers(players);
+      setScreen(savedScreen || 'game');
       setSelectedCard(null);
     });
 
@@ -90,12 +123,13 @@ function App() {
       socket.off('room-joined');
       socket.off('room-update');
       socket.off('game-started');
+      socket.off('rejoined');
       socket.off('game-update');
       socket.off('hint-received');
       socket.off('error');
       socket.off('player-disconnected');
     };
-  }, [gameState]);
+  }, [gameState, playerName]);
 
   const createRoom = () => {
     if (!playerName.trim()) {
@@ -129,6 +163,11 @@ function App() {
   };
 
   const returnToLobby = () => {
+    // Clear localStorage when intentionally leaving
+    localStorage.removeItem('roomCode');
+    localStorage.removeItem('playerIndex');
+    localStorage.removeItem('playerName');
+    
     setScreen('menu');
     setGameState(null);
     setSelectedCard(null);
