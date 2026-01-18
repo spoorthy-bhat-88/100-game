@@ -61,7 +61,7 @@ body::before {
   max-width: 100vw;
   height: 100vh;
   margin: 0 auto;
-  padding: 16px;
+  padding: 1rem;
   position: relative;
   z-index: 1;
   display: flex;
@@ -73,12 +73,12 @@ body::before {
 .setup-screen {
   background: rgba(255, 255, 255, 0.98);
   backdrop-filter: blur(20px);
-  padding: 48px 40px;
-  border-radius: 32px;
+  padding: 3rem 2.5rem;
+  border-radius: 2rem;
   box-shadow: 
     0 20px 60px rgba(0, 0, 0, 0.5),
     inset 0 1px 0 rgba(255, 255, 255, 0.8);
-  max-width: 600px;
+  max-width: 37.5rem;
   max-height: 90vh;
   margin: auto;
   animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
@@ -99,22 +99,22 @@ body::before {
 
 .setup-screen h1 {
   text-align: center;
-  font-size: 64px;
-  margin: 0 0 8px 0;
+  font-size: 4rem;
+  margin: 0 0 0.5rem 0;
   color: #6366f1;
   font-weight: 900;
-  letter-spacing: -2px;
+  letter-spacing: -0.05em;
   text-shadow: 0 2px 20px rgba(99, 102, 241, 0.3);
 }
 
 .error-message {
   background: #ef4444;
   color: white;
-  padding: 12px 20px;
-  border-radius: 12px;
+  padding: 0.75rem 1.25rem;
+  border-radius: 0.75rem;
   text-align: center;
   font-weight: 700;
-  margin-bottom: 20px;
+  margin-bottom: 1.25rem;
   animation: slideUp 0.3s ease;
 }
 
@@ -122,9 +122,9 @@ body::before {
   text-align: center;
   font-weight: 700;
   color: #94a3b8;
-  margin: 16px 0;
-  font-size: 14px;
-  letter-spacing: 2px;
+  margin: 1rem 0;
+  font-size: 0.875rem;
+  letter-spacing: 0.125em;
 }
 
 .join-button {
@@ -137,29 +137,29 @@ body::before {
 }
 
 .lobby-info {
-  margin-top: 24px;
+  margin-top: 1.5rem;
 }
 
 .lobby-info h3 {
   color: #1e293b;
-  font-size: 20px;
+  font-size: 1.25rem;
   font-weight: 800;
-  margin-bottom: 16px;
+  margin-bottom: 1rem;
 }
 
 .game-settings {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-radius: 16px;
-  padding: 16px 24px;
-  margin-bottom: 24px;
+  border-radius: 1rem;
+  padding: 1rem 1.5rem;
+  margin-bottom: 1.5rem;
   display: flex;
   justify-content: space-around;
-  gap: 20px;
+  gap: 1.25rem;
 }
 
 .game-settings p {
   color: white;
-  font-size: 16px;
+  font-size: 1rem;
   font-weight: 700;
   margin: 0;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
@@ -168,18 +168,18 @@ body::before {
 .player-list {
   list-style: none;
   padding: 0;
-  margin: 0 0 20px 0;
+  margin: 0 0 1.25rem 0;
   background: #f8fafc;
-  border-radius: 16px;
-  padding: 16px;
+  border-radius: 1rem;
+  padding: 1rem;
   border: 2px solid #e2e8f0;
 }
 
 .player-list li {
-  padding: 12px 16px;
+  padding: 0.75rem 1rem;
   background: white;
-  margin-bottom: 8px;
-  border-radius: 12px;
+  margin-bottom: 0.5rem;
+  border-radius: 0.75rem;
   font-weight: 700;
   color: #1e293b;
   border: 2px solid #e2e8f0;
@@ -193,42 +193,42 @@ body::before {
   text-align: center;
   color: #64748b;
   font-style: italic;
-  margin: 16px 0;
+  margin: 1rem 0;
   font-weight: 600;
 }
 
 .subtitle {
   text-align: center;
   color: #64748b;
-  font-size: 18px;
-  margin: 0 0 40px 0;
+  font-size: 1.125rem;
+  margin: 0 0 2.5rem 0;
   font-weight: 500;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.03em;
 }
 
 .setup-form {
   display: flex;
   flex-direction: column;
-  gap: 24px;
-  margin-bottom: 40px;
+  gap: 1.5rem;
+  margin-bottom: 2.5rem;
 }
 
 .setup-form label {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 0.625rem;
   font-weight: 700;
   color: #1e293b;
-  font-size: 14px;
+  font-size: 0.875rem;
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 0.0625em;
 }
 
 .setup-form input {
-  padding: 16px 20px;
-  font-size: 20px;
+  padding: 1rem 1.25rem;
+  font-size: 1.25rem;
   border: 2px solid #e2e8f0;
-  border-radius: 16px;
+  border-radius: 1rem;
   width: 100%;
   transition: all 0.3s ease;
   font-weight: 700;
@@ -238,50 +238,50 @@ body::before {
 .setup-form input:focus {
   outline: none;
   border-color: #6366f1;
-  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
-  transform: translateY(-2px);
+  box-shadow: 0 0 0 0.25rem rgba(99, 102, 241, 0.1);
+  transform: translateY(-0.125rem);
 }
 
 .start-button {
-  padding: 20px 40px;
-  font-size: 18px;
+  padding: 1.25rem 2.5rem;
+  font-size: 1.125rem;
   font-weight: 800;
   background: #6366f1;
   color: white;
   border: none;
-  border-radius: 16px;
+  border-radius: 1rem;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   box-shadow: 
     0 10px 30px rgba(99, 102, 241, 0.4),
     0 0 0 0 rgba(99, 102, 241, 0.5);
-  letter-spacing: 1px;
+  letter-spacing: 0.0625em;
   text-transform: uppercase;
 }
 
 .start-button:hover {
-  transform: translateY(-3px);
+  transform: translateY(-0.1875rem);
   box-shadow: 
     0 15px 40px rgba(99, 102, 241, 0.5),
-    0 0 0 6px rgba(99, 102, 241, 0.1);
+    0 0 0 0.375rem rgba(99, 102, 241, 0.1);
 }
 
 .start-button:active {
-  transform: translateY(-1px);
+  transform: translateY(-0.0625rem);
 }
 
 .rules {
   background: #f8fafc;
-  padding: 28px;
-  border-radius: 24px;
+  padding: 1.75rem;
+  border-radius: 1.5rem;
   border: 2px solid #e2e8f0;
 }
 
 .rules h3 {
   margin-top: 0;
   color: #1e293b;
-  font-size: 20px;
-  margin-bottom: 16px;
+  font-size: 1.25rem;
+  margin-bottom: 1rem;
   font-weight: 800;
 }
 
@@ -292,10 +292,10 @@ body::before {
 }
 
 .rules li {
-  padding: 8px 0;
+  padding: 0.5rem 0;
   color: #475569;
   line-height: 1.6;
-  font-size: 14px;
+  font-size: 0.875rem;
   border-bottom: 1px solid #e2e8f0;
 }
 
@@ -1210,60 +1210,64 @@ body::before {
 /* Small phones (320px - 480px) */
 @media (max-width: 480px) {
   .app {
-    padding: 8px;
+    padding: 0.5rem;
   }
   
   .setup-screen {
-    padding: 24px 16px;
+    padding: 1.5rem 1rem;
     max-height: 95vh;
-    border-radius: 20px;
+    border-radius: 1.25rem;
   }
   
   .setup-screen h1 {
-    font-size: 36px;
+    font-size: 2.25rem;
   }
   
   .subtitle {
-    font-size: 12px;
+    font-size: 0.75rem;
   }
   
   .setup-form {
-    gap: 12px;
+    gap: 0.75rem;
   }
   
   .setup-form label {
-    font-size: 11px;
+    font-size: 0.6875rem;
   }
   
   .setup-form input {
-    padding: 10px 14px;
-    font-size: 14px;
+    padding: 0.625rem 0.875rem;
+    font-size: 0.875rem;
   }
   
   .start-button {
-    padding: 12px 20px;
-    font-size: 13px;
+    padding: 0.75rem 1.25rem;
+    font-size: 0.8125rem;
   }
   
   .rules {
-    margin-top: 20px;
-    padding: 16px;
+    margin-top: 1.25rem;
+    padding: 1rem;
   }
   
   .rules h3 {
-    font-size: 14px;
+    font-size: 0.875rem;
   }
   
   .rules ul li {
-    font-size: 11px;
-    padding: 6px 0;
+    font-size: 0.6875rem;
+    padding: 0.375rem 0;
   }
   
   /* Game layout - stack vertically on small phones */
   .game-container {
     flex-direction: column;
-    gap: 12px;
-    margin-top: 8px;
+    gap: 0.5rem;
+    margin-top: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    max-height: calc(100vh - 2.5rem);
+    padding-bottom: 1rem;
   }
   
   .piles-column,
@@ -1271,90 +1275,158 @@ body::before {
   .hints-column {
     max-height: none;
     overflow-y: visible;
+    flex-shrink: 0;
   }
   
   .game-header {
-    flex-direction: column;
-    gap: 12px;
-    padding: 12px;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.25rem;
+    padding: 0.375rem 0.5rem;
   }
   
   .game-header h1 {
-    font-size: 24px;
+    font-size: 0.875rem;
+    margin: 0;
+    flex-shrink: 0;
   }
   
   .game-stats {
-    flex-direction: column;
-    gap: 8px;
-    font-size: 12px;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    font-size: 0.5rem;
+    justify-content: flex-end;
+    flex: 1;
+  }
+  
+  .game-stats span {
+    padding: 0.125rem 0.375rem;
+    background: rgba(99, 102, 241, 0.1);
+    border-radius: 0.25rem;
+    white-space: nowrap;
   }
   
   .game-message {
-    font-size: 14px;
-    padding: 12px 16px;
-    margin: 8px 0;
+    font-size: 0.875rem;
+    padding: 0.75rem 1rem;
+    margin: 0.5rem 0;
   }
   
   .new-game-button {
     width: 100%;
-    padding: 10px;
-    font-size: 12px;
+    padding: 0.625rem;
+    font-size: 0.75rem;
+  }
+  
+  /* Single row layout for all piles on mobile */
+  .piles-container {
+    gap: 0.25rem;
+  }
+  
+  .piles-container h3 {
+    font-size: 0.5rem;
+    margin: 0 0 0.125rem 0;
   }
   
   .pile-row {
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+    gap: 0.125rem;
+    justify-content: space-between;
+  }
+  
+  /* Make piles more compact on mobile */
+  .pile {
+    padding: 0.25rem;
+    border-radius: 0.375rem;
+    flex: 1;
+    min-width: 0;
+  }
+  
+  .pile::before {
+    height: 1px;
+  }
+  
+  .pile-header {
+    margin-bottom: 0.15rem;
+  }
+  
+  .pile-header h3 {
+    font-size: 0.5rem;
+    margin: 0 0 0.0625rem 0;
+    letter-spacing: 0.01em;
+  }
+  
+  .pile-rule {
+    font-size: 0.4375rem;
+    line-height: 1.1;
+  }
+  
+  .pile-rule-alt {
+    font-size: 0.375rem;
+    padding: 0.0625rem 0.25rem;
+    margin-top: 0.0625rem;
+  }
+  
+  .pile-card {
+    width: 2rem;
+    height: 1.00rem;
+    font-size: 0.575rem;
+    border-width: 1.5px;
+    border-radius: 0.25rem;
   }
   
   .hint-section {
-    padding: 12px;
+    padding: 0.75rem;
   }
   
   .hint-title {
-    font-size: 12px;
+    font-size: 0.75rem;
   }
   
   .custom-hint-input {
-    font-size: 13px;
+    font-size: 0.8125rem;
   }
   
   .send-hint-button {
-    font-size: 12px;
-    padding: 8px 14px;
+    font-size: 0.75rem;
+    padding: 0.5rem 0.875rem;
   }
   
   .lobby-info {
-    padding: 16px;
+    padding: 1rem;
   }
   
   .player-list li {
-    font-size: 13px;
+    font-size: 0.8125rem;
   }
 }
 
 /* Phones and small tablets (481px - 768px) */
 @media (min-width: 481px) and (max-width: 768px) {
   .app {
-    padding: 12px;
+    padding: 0.75rem;
   }
   
   .setup-screen {
-    padding: 32px 24px;
+    padding: 2rem 1.5rem;
     max-height: 92vh;
-    border-radius: 24px;
+    border-radius: 1.5rem;
   }
   
   .setup-screen h1 {
-    font-size: 48px;
+    font-size: 3rem;
   }
   
   .subtitle {
-    font-size: 14px;
+    font-size: 0.875rem;
   }
   
   /* Game layout - 2 columns on tablets */
   .game-container {
     flex-direction: column;
-    gap: 14px;
+    gap: 0.875rem;
   }
   
   .piles-column {
@@ -1363,82 +1435,82 @@ body::before {
   
   .players-column,
   .hints-column {
-    max-height: 50vh;
+    max-height: 40vh;
   }
   
   .game-header {
     flex-wrap: wrap;
-    gap: 12px;
+    gap: 0.55rem;
   }
   
   .game-header h1 {
-    font-size: 28px;
+    font-size: 1.75rem;
   }
   
   .game-stats {
     flex-wrap: wrap;
-    gap: 10px;
-    font-size: 13px;
+    gap: 0.625rem;
+    font-size: 0.8125rem;
   }
   
   .new-game-button {
-    padding: 10px 18px;
-    font-size: 13px;
+    padding: 0.625rem 1.125rem;
+    font-size: 0.8125rem;
   }
 }
 
 /* Tablets (769px - 1024px) */
 @media (min-width: 769px) and (max-width: 1024px) {
   .app {
-    padding: 14px;
+    padding: 0.875rem;
   }
   
   .setup-screen {
-    padding: 40px 32px;
-    max-width: 700px;
+    padding: 2.5rem 2rem;
+    max-width: 43.75rem;
   }
   
   .setup-screen h1 {
-    font-size: 56px;
+    font-size: 3.5rem;
   }
   
   /* Game layout - 3 columns but narrower */
   .game-container {
-    gap: 14px;
+    gap: 0.875rem;
   }
   
   .piles-column,
   .players-column,
   .hints-column {
     flex: 1;
-    min-width: 200px;
+    min-width: 12.5rem;
   }
   
   .game-header h1 {
-    font-size: 32px;
+    font-size: 2rem;
   }
   
   .game-stats {
-    font-size: 14px;
-    gap: 12px;
+    font-size: 0.875rem;
+    gap: 0.75rem;
   }
 }
 
 /* Large tablets and small desktops (1025px - 1280px) */
 @media (min-width: 1025px) and (max-width: 1280px) {
   .app {
-    padding: 16px;
+    padding: 1rem;
   }
   
   .game-container {
-    gap: 16px;
+    gap: 1rem;
   }
   
   .piles-column,
   .players-column,
   .hints-column {
     flex: 1;
-    min-width: 250px;
+    min-width: 15.625rem;
   }
 }
 
@@ -1446,73 +1518,73 @@ body::before {
 @media (max-height: 600px) and (orientation: landscape) {
   .setup-screen {
     max-height: 95vh;
-    padding: 20px 24px;
+    padding: 1.25rem 1.5rem;
     overflow-y: auto;
   }
   
   .setup-screen h1 {
-    font-size: 36px;
-    margin-bottom: 8px;
+    font-size: 2.25rem;
+    margin-bottom: 0.5rem;
   }
   
   .subtitle {
-    margin-bottom: 12px;
+    margin-bottom: 0.75rem;
   }
   
   .setup-form {
-    gap: 10px;
+    gap: 0.625rem;
   }
   
   .rules {
-    margin-top: 16px;
-    max-height: 200px;
+    margin-top: 1rem;
+    max-height: 12.5rem;
     overflow-y: auto;
   }
   
   .game-header {
-    padding: 10px 16px;
+    padding: 0.625rem 1rem;
   }
   
   .game-header h1 {
-    font-size: 24px;
+    font-size: 1.5rem;
   }
   
   .game-container {
-    margin-top: 8px;
-    max-height: calc(100vh - 100px);
+    margin-top: 0.5rem;
+    max-height: calc(100vh - 6.25rem);
   }
   
   .piles-column {
-    max-height: calc(100vh - 120px);
+    max-height: calc(100vh - 7.5rem);
   }
 }
 
 /* Very large screens (1920px+) */
 @media (min-width: 1920px) {
   .app {
-    max-width: 1800px;
+    max-width: 112.5rem;
     margin: 0 auto;
   }
   
   .setup-screen {
-    max-width: 800px;
-    padding: 64px 48px;
+    max-width: 50rem;
+    padding: 4rem 3rem;
   }
   
   .setup-screen h1 {
-    font-size: 72px;
+    font-size: 4.5rem;
   }
   
   .game-header h1 {
-    font-size: 42px;
+    font-size: 2.625rem;
   }
   
   .game-stats {
-    font-size: 18px;
+    font-size: 1.125rem;
   }
   
   .game-container {
-    gap: 24px;
+    gap: 1.5rem;
   }
 }
 
@@ -1523,17 +1595,17 @@ body::before {
   .new-game-button,
   .end-turn-button,
   .send-hint-button {
-    min-height: 44px;
+    min-height: 2.75rem;
   }
   
   .card {
-    min-width: 60px;
-    min-height: 80px;
+    min-width: 3.75rem;
+    min-height: 5rem;
   }
   
   .setup-form input,
   .custom-hint-input {
-    min-height: 44px;
+    min-height: 2.75rem;
   }
   
   /* Remove hover effects on touch devices */
