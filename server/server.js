@@ -2,6 +2,11 @@ import express from 'express';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
+import { MongoClient } from 'mongodb';
+import dotenv from 'dotenv';
+
+// Load environment variables from .env file
+dotenv.config();
 
 const app = express();
 app.use(cors());
@@ -27,6 +32,79 @@ const io = new Server(httpServer, {
 // Store active game rooms
 const gameRooms = new Map();
 
+// MongoDB connection
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/hundred-game';
+let db;
+let roomsCollection;
+
+// Connect to MongoDB
+async function connectDB() {
+  try {
+    const client = new MongoClient(MONGODB_URI);
+    await client.connect();
+    db = client.db();
+    roomsCollection = db.collection('rooms');
+    console.log('Connected to MongoDB');
+    
+    // Create index on room code for faster lookups
+    await roomsCollection.createIndex({ code: 1 }, { unique: true });
+    
+    // Load existing rooms into memory
+    await loadGameRooms();
+  } catch (error) {
+    console.error('Failed to connect to MongoDB:', error);
+    console.log('Continuing without database persistence');
+  }
+}
+
+// Load game rooms from database
+async function loadGameRooms() {
+  try {
+    if (!roomsCollection) return;
+    
+    const rooms = await roomsCollection.find({}).toArray();
+    rooms.forEach(room => {
+      gameRooms.set(room.code, room);
+    });
+    console.log(`Loaded ${rooms.length} game rooms from database`);
+  } catch (error) {
+    console.error('Error loading game rooms:', error);
+  }
+}
+
+// Save a single room to database
+async function saveRoom(roomCode) {
+  try {
+    if (!roomsCollection) return;
+    
+    const room = gameRooms.get(roomCode);
+    if (!room) return;
+    
+    await roomsCollection.updateOne(
+      { code: roomCode },
+      { $set: room },
+      { upsert: true }
+    );
+  } catch (error) {
+    console.error('Error saving room:', error);
+  }
+}
+
+// Delete a room from database
+async function deleteRoom(roomCode) {
+  try {
+    if (!roomsCollection) return;
+    
+    await roomsCollection.deleteOne({ code: roomCode });
+    console.log(`Deleted room ${roomCode} from database`);
+  } catch (error) {
+    console.error('Error deleting room:', error);
+  }
+}
+
+// Connect to database on startup
+connectDB();
+
 // Generate random room code
 function generateRoomCode() {
   return Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -36,7 +114,7 @@ io.on('connection', (socket) => {
   console.log('User connected:', socket.id);
 
   // Create a new game room
-  socket.on('create-room', ({ playerName, numPlayers, handSize, minCardsPerTurn }) => {
+  socket.on('create-room', async ({ playerName, numPlayers, handSize, minCardsPerTurn }) => {
     const roomCode = generateRoomCode();
     const room = {
       code: roomCode,
@@ -64,11 +142,12 @@ io.on('connection', (socket) => {
       started: room.started
     });
     
+    await saveRoom(roomCode); // Save to database
     console.log(`Room ${roomCode} created by ${playerName} with ${handSize || 4} cards per player and ${minCardsPerTurn || 2} min cards per turn`);
   });
 
   // Join an existing room
-  socket.on('join-room', ({ roomCode, playerName }) => {
+  socket.on('join-room', async ({ roomCode, playerName }) => {
     const room = gameRooms.get(roomCode);
     
     if (!room) {
@@ -101,6 +180,7 @@ io.on('connection', (socket) => {
       started: room.started
     });
     
+    await saveRoom(roomCode); // Save to database
     console.log(`${playerName} joined room ${roomCode}`);
   });
 
@@ -152,7 +232,7 @@ io.on('connection', (socket) => {
   });
 
   // Start the game
-  socket.on('start-game', ({ roomCode, gameState }) => {
+  socket.on('start-game', async ({ roomCode, gameState }) => {
     const room = gameRooms.get(roomCode);
     
     if (!room) {
@@ -169,11 +249,12 @@ io.on('connection', (socket) => {
     room.started = true;
     
     io.to(roomCode).emit('game-started', { gameState });
+    await saveRoom(roomCode); // Save to database
     console.log(`Game started in room ${roomCode}`);
   });
 
   // Sync game state with validation
-  socket.on('game-action', ({ roomCode, gameState }, callback) => {
+  socket.on('game-action', async ({ roomCode, gameState }, callback) => {
     const room = gameRooms.get(roomCode);
     
     if (!room) {
@@ -194,6 +275,9 @@ io.on('connection', (socket) => {
     // Broadcast to ALL players in the room (including sender)
     io.to(roomCode).emit('game-update', { gameState });
     
+    // Save to database
+    await saveRoom(roomCode);
+    
     // Send acknowledgment back to sender
     if (callback) callback({ success: true });
   });
@@ -204,7 +288,7 @@ io.on('connection', (socket) => {
   });
 
   // Handle disconnect
-  socket.on('disconnect', () => {
+  socket.on('disconnect', async () => {
     console.log('User disconnected:', socket.id);
     
     // Remove player from any rooms they were in
@@ -217,6 +301,7 @@ io.on('connection', (socket) => {
         // If room is empty, delete it
         if (room.players.length === 0) {
           gameRooms.delete(roomCode);
+          await deleteRoom(roomCode);
           console.log(`Room ${roomCode} deleted (empty)`);
         } else {
           // Update remaining players
@@ -231,6 +316,9 @@ io.on('connection', (socket) => {
               message: 'A player disconnected' 
             });
           }
+          
+          // Save updated room state
+          await saveRoom(roomCode);
         }
         break;
       }
@@ -241,4 +329,17 @@ io.on('connection', (socket) => {
 const PORT = process.env.PORT || 3001;
 httpServer.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+});
+
+// Graceful shutdown - save state on exit
+process.on('SIGINT', () => {
+  console.log('\nShutting down gracefully...');
+  saveGameRooms();
+  process.exit(0);
+});
+
+process.on('SIGTERM', () => {
+  console.log('\nShutting down gracefully...');
+  saveGameRooms();
+  process.exit(0);
 });
