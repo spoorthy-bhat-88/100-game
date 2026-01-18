@@ -18,13 +18,13 @@ export function shuffleDeck(deck) {
   return shuffled;
 }
 
-export function dealInitialHands(deck, numPlayers) {
+export function dealInitialHands(deck, numPlayers, handSize = 4) {
   const hands = [];
   let deckIndex = 0;
   
   for (let i = 0; i < numPlayers; i++) {
     const hand = [];
-    for (let j = 0; j < 4; j++) {
+    for (let j = 0; j < handSize; j++) {
       if (deckIndex < deck.length) {
         hand.push(deck[deckIndex++]);
       }
@@ -66,9 +66,9 @@ export function checkWinCondition(hands, deck) {
   return deck.length === 0 && hands.every(hand => hand.length === 0);
 }
 
-export function initializeGame(numPlayers) {
+export function initializeGame(numPlayers, handSize = 4, minCardsPerTurn = 2) {
   const deck = shuffleDeck(createDeck());
-  const { hands, remainingDeck } = dealInitialHands(deck, numPlayers);
+  const { hands, remainingDeck } = dealInitialHands(deck, numPlayers, handSize);
   
   return {
     deck: remainingDeck,
@@ -79,6 +79,9 @@ export function initializeGame(numPlayers) {
     descending2: 100,
     currentPlayer: 0,
     numPlayers,
+    handSize,
+    minCardsPerTurn,
+    cardsPlayedThisTurn: 0,
     gameStatus: 'playing', // 'playing', 'won', 'lost'
     hints: [],
     playLog: []
@@ -86,7 +89,7 @@ export function initializeGame(numPlayers) {
 }
 
 export function playCard(gameState, playerIndex, cardIndex, pileType) {
-  const { hands, deck, ascending1, ascending2, descending1, descending2, currentPlayer } = gameState;
+  const { hands, deck, ascending1, ascending2, descending1, descending2, currentPlayer, minCardsPerTurn, cardsPlayedThisTurn } = gameState;
   
   // Validate it's the current player's turn
   if (playerIndex !== currentPlayer) {
@@ -144,8 +147,12 @@ export function playCard(gameState, playerIndex, cardIndex, pileType) {
   const newDescending1 = pileType === 'descending1' ? card : descending1;
   const newDescending2 = pileType === 'descending2' ? card : descending2;
   
-  // Move to next player
-  const nextPlayer = (currentPlayer + 1) % gameState.numPlayers;
+  // Increment cards played this turn
+  const newCardsPlayedThisTurn = cardsPlayedThisTurn + 1;
+  
+  // Player stays as current player - they must manually end turn
+  const nextPlayer = currentPlayer;
+  const finalCardsPlayedThisTurn = newCardsPlayedThisTurn;
   
   // Add to play log
   const pileSymbol = isAscending ? '⬆️' : '⬇️';
@@ -169,6 +176,7 @@ export function playCard(gameState, playerIndex, cardIndex, pileType) {
     descending1: newDescending1,
     descending2: newDescending2,
     currentPlayer: nextPlayer,
+    cardsPlayedThisTurn: finalCardsPlayedThisTurn,
     playLog: [...gameState.playLog, logEntry]
   };
   
@@ -185,6 +193,28 @@ export function playCard(gameState, playerIndex, cardIndex, pileType) {
   } else if (checkLossCondition(newHands, piles, nextPlayer)) {
     newGameState.gameStatus = 'lost';
   }
+  
+  return { success: true, newGameState };
+}
+
+export function endTurn(gameState) {
+  const { currentPlayer, cardsPlayedThisTurn, minCardsPerTurn } = gameState;
+  
+  // Can only end turn if minimum cards have been played
+  if (cardsPlayedThisTurn < minCardsPerTurn) {
+    return { 
+      success: false, 
+      error: `You must play at least ${minCardsPerTurn} card${minCardsPerTurn > 1 ? 's' : ''} per turn!` 
+    };
+  }
+  
+  const nextPlayer = (currentPlayer + 1) % gameState.numPlayers;
+  
+  const newGameState = {
+    ...gameState,
+    currentPlayer: nextPlayer,
+    cardsPlayedThisTurn: 0
+  };
   
   return { success: true, newGameState };
 }

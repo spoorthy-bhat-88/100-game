@@ -3,7 +3,7 @@ import { io } from 'socket.io-client';
 import './App.css';
 import Pile from './engine/Pile';
 import PlayerHand from './engine/PlayerHand';
-import { initializeGame, playCard, isValidPlay, addHint } from './engine/gameEngine';
+import { initializeGame, playCard, isValidPlay, addHint, endTurn } from './engine/gameEngine';
 
 // Use environment variable for production or fall back to localhost
 const SERVER_URL = import.meta.env.VITE_SERVER_URL || 
@@ -16,6 +16,8 @@ const socket = io(SERVER_URL);
 function App() {
   const [gameState, setGameState] = useState(null);
   const [numPlayers, setNumPlayers] = useState(2);
+  const [handSize, setHandSize] = useState(4);
+  const [minCardsPerTurn, setMinCardsPerTurn] = useState(2);
   const [selectedCard, setSelectedCard] = useState(null);
   const [customHint, setCustomHint] = useState('');
   
@@ -70,9 +72,15 @@ function App() {
       localStorage.setItem('playerName', playerName);
     });
 
-    socket.on('room-update', ({ players, numPlayers: total, started }) => {
+    socket.on('room-update', ({ players, numPlayers: total, handSize: roomHandSize, minCardsPerTurn: roomMinCards, started }) => {
       setRoomPlayers(players);
       setNumPlayers(total);
+      if (roomHandSize) {
+        setHandSize(roomHandSize);
+      }
+      if (roomMinCards) {
+        setMinCardsPerTurn(roomMinCards);
+      }
     });
 
     socket.on('game-started', ({ gameState: newGameState }) => {
@@ -137,7 +145,7 @@ function App() {
       setTimeout(() => setErrorMessage(''), 3000);
       return;
     }
-    socket.emit('create-room', { playerName: playerName.trim(), numPlayers });
+    socket.emit('create-room', { playerName: playerName.trim(), numPlayers, handSize, minCardsPerTurn });
   };
 
   const joinRoom = () => {
@@ -157,7 +165,7 @@ function App() {
   const startGame = () => {
     if (screen === 'lobby' && isHost) {
       // Host starts multiplayer game
-      const newGame = initializeGame(numPlayers);
+      const newGame = initializeGame(numPlayers, handSize, minCardsPerTurn);
       socket.emit('start-game', { roomCode, gameState: newGame });
     }
   };
@@ -216,6 +224,22 @@ function App() {
     }
   };
 
+  const handleEndTurn = () => {
+    if (!gameState) return;
+    if (myPlayerIndex !== gameState.currentPlayer) return;
+
+    const result = endTurn(gameState);
+    
+    if (result.success) {
+      setGameState(result.newGameState);
+      setSelectedCard(null);
+      // Broadcast to other players
+      socket.emit('game-action', { roomCode, gameState: result.newGameState });
+    } else {
+      alert(result.error);
+    }
+  };
+
   const handleSendHint = () => {
     if (!gameState || !customHint.trim()) return;
     
@@ -236,8 +260,8 @@ function App() {
     setGameState(newGameState);
     setCustomHint('');
     
-    // Broadcast updated game state to other players
-    socket.emit('game-action', { roomCode, gameState: newGameState });
+    // Broadcast hint to other players
+    socket.emit('send-hint', { roomCode, hint });
   };
 
   const canPlayOnPile = (card, pileType) => {
@@ -303,6 +327,28 @@ function App() {
               />
             </label>
             
+            <label>
+              CARDS PER PLAYER:
+              <input
+                type="number"
+                min="3"
+                max="10"
+                value={handSize}
+                onChange={(e) => setHandSize(parseInt(e.target.value))}
+              />
+            </label>
+            
+            <label>
+              MIN. CARDS PER TURN:
+              <input
+                type="number"
+                min="1"
+                max="5"
+                value={minCardsPerTurn}
+                onChange={(e) => setMinCardsPerTurn(parseInt(e.target.value))}
+              />
+            </label>
+            
             <button onClick={createRoom} className="start-button">
               Create Room
             </button>
@@ -329,11 +375,12 @@ function App() {
             <h3>How to Play</h3>
             <ul>
               <li>🎯 <strong>Goal:</strong> Play all cards from the deck</li>
-              <li>🃏 Each player starts with 4 cards</li>
+              <li>🃏 Each player starts with a configurable number of cards (3-10)</li>
               <li>⬆️ <strong>Ascending piles (×2):</strong> Play cards higher than the top card (start at 0)</li>
               <li>⬇️ <strong>Descending piles (×2):</strong> Play cards lower than the top card (start at 100)</li>
               <li>🔟 <strong>Special:</strong> Can also play a card exactly 10 less than an ascending pile, or 10 more than a descending pile</li>
-              <li>🔄 On your turn: play one card on any pile, then draw one card</li>
+              <li>🔄 On your turn: play minimum required cards (configurable 1-5), then click "End Turn"</li>
+              <li>🎴 After playing, draw one card for each card played</li>
               <li>💡 Give custom hints anytime (no numbers allowed!)</li>
               <li>🏆 <strong>Win:</strong> Deck and all hands empty</li>
               <li>💀 <strong>Lose:</strong> If any player can't make a legal move on their turn</li>
@@ -353,6 +400,12 @@ function App() {
           <p className="subtitle">Room Code: <strong>{roomCode}</strong></p>
           
           <div className="lobby-info">
+            <div className="game-settings">
+              <p>👥 Players: {numPlayers}</p>
+              <p>🃏 Cards per player: {handSize}</p>
+              <p>🎯 Min. cards per turn: {minCardsPerTurn}</p>
+            </div>
+            
             <h3>Players ({roomPlayers.length}/{numPlayers})</h3>
             <ul className="player-list">
               {roomPlayers.map((player, idx) => (
@@ -395,6 +448,11 @@ function App() {
         <div className="game-stats">
           <span>Deck: {gameState.deck.length}</span>
           <span>Player {gameState.currentPlayer + 1}'s Turn</span>
+          {myPlayerIndex === gameState.currentPlayer && (
+            <span className="turn-progress">
+              Cards played: {gameState.cardsPlayedThisTurn}/{gameState.minCardsPerTurn}
+            </span>
+          )}
         </div>
         <button onClick={returnToLobby} className="new-game-button">
           Leave Game
@@ -452,6 +510,16 @@ function App() {
               />
             </div>
           </div>
+          
+          {/* End Turn Button */}
+          {myPlayerIndex === gameState.currentPlayer && gameState.cardsPlayedThisTurn >= gameState.minCardsPerTurn && (
+            <button 
+              className="end-turn-button" 
+              onClick={handleEndTurn}
+            >
+              ✓ End Turn
+            </button>
+          )}
         </div>
 
         {/* Second Column - Players' Hands */}

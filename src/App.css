@@ -52,9 +52,11 @@ body::before {
     0 20px 60px rgba(0, 0, 0, 0.5),
     inset 0 1px 0 rgba(255, 255, 255, 0.8);
   max-width: 600px;
+  max-height: 90vh;
   margin: auto;
   animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
   border: 1px solid rgba(255, 255, 255, 0.2);
+  overflow-y: auto;
 }
 
 @keyframes slideUp {
@@ -116,6 +118,24 @@ body::before {
   font-size: 20px;
   font-weight: 800;
   margin-bottom: 16px;
+}
+
+.game-settings {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 16px;
+  padding: 16px 24px;
+  margin-bottom: 24px;
+  display: flex;
+  justify-content: space-around;
+  gap: 20px;
+}
+
+.game-settings p {
+  color: white;
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .player-list {
@@ -297,6 +317,23 @@ body::before {
   white-space: nowrap;
 }
 
+.game-stats .turn-progress {
+  background: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+  border-color: rgba(16, 185, 129, 0.2);
+  font-weight: 800;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
 .new-game-button {
   padding: 10px 20px;
   background: #ef4444;
@@ -373,6 +410,32 @@ body::before {
   min-width: 0;
   display: flex;
   flex-direction: column;
+  gap: 16px;
+}
+
+.end-turn-button {
+  padding: 14px 24px;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  border: none;
+  border-radius: 16px;
+  font-weight: 800;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  animation: slideUp 0.5s ease;
+}
+
+.end-turn-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(16, 185, 129, 0.5);
+}
+
+.end-turn-button:active {
+  transform: translateY(0);
 }
 
 /* Second Column - Players */

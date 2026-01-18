@@ -27,11 +27,13 @@ io.on('connection', (socket) => {
   console.log('User connected:', socket.id);
 
   // Create a new game room
-  socket.on('create-room', ({ playerName, numPlayers }) => {
+  socket.on('create-room', ({ playerName, numPlayers, handSize, minCardsPerTurn }) => {
     const roomCode = generateRoomCode();
     const room = {
       code: roomCode,
       numPlayers,
+      handSize: handSize || 4,
+      minCardsPerTurn: minCardsPerTurn || 2,
       players: [{
         id: socket.id,
         name: playerName,
@@ -48,10 +50,12 @@ io.on('connection', (socket) => {
     io.to(roomCode).emit('room-update', { 
       players: room.players,
       numPlayers: room.numPlayers,
+      handSize: room.handSize,
+      minCardsPerTurn: room.minCardsPerTurn,
       started: room.started
     });
     
-    console.log(`Room ${roomCode} created by ${playerName}`);
+    console.log(`Room ${roomCode} created by ${playerName} with ${handSize || 4} cards per player and ${minCardsPerTurn || 2} min cards per turn`);
   });
 
   // Join an existing room
@@ -97,10 +101,6 @@ io.on('connection', (socket) => {
     
     if (!room) {
       socket.emit('error', { message: 'Room not found - game may have ended' });
-      // Clear localStorage on client side
-      localStorage.removeItem('roomCode');
-      localStorage.removeItem('playerIndex');
-      localStorage.removeItem('playerName');
       return;
     }
     
