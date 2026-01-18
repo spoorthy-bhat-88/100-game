@@ -4,6 +4,33 @@
   padding: 0;
 }
 
+/* Custom scrollbar for webkit browsers */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(99, 102, 241, 0.5);
+  border-radius: 10px;
+  transition: background 0.3s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(99, 102, 241, 0.7);
+}
+
+/* Firefox scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(99, 102, 241, 0.5) rgba(0, 0, 0, 0.1);
+}
+
 body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
@@ -323,6 +350,14 @@ body::before {
   border-color: rgba(16, 185, 129, 0.2);
   font-weight: 800;
   animation: pulse 2s ease-in-out infinite;
+}
+
+.game-stats .connection-warning {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.2);
+  font-weight: 800;
+  animation: pulse 1s ease-in-out infinite;
 }
 
 @keyframes pulse {
@@ -1170,29 +1205,367 @@ body::before {
   animation: slideUp 0.5s ease 0.3s both;
 }
 
-/* Responsive */
-@media (max-width: 768px) {
-  .piles-container {
+/* Responsive Design - Mobile First */
+
+/* Small phones (320px - 480px) */
+@media (max-width: 480px) {
+  .app {
+    padding: 8px;
+  }
+  
+  .setup-screen {
+    padding: 24px 16px;
+    max-height: 95vh;
+    border-radius: 20px;
+  }
+  
+  .setup-screen h1 {
+    font-size: 36px;
+  }
+  
+  .subtitle {
+    font-size: 12px;
+  }
+  
+  .setup-form {
+    gap: 12px;
+  }
+  
+  .setup-form label {
+    font-size: 11px;
+  }
+  
+  .setup-form input {
+    padding: 10px 14px;
+    font-size: 14px;
+  }
+  
+  .start-button {
+    padding: 12px 20px;
+    font-size: 13px;
+  }
+  
+  .rules {
+    margin-top: 20px;
+    padding: 16px;
+  }
+  
+  .rules h3 {
+    font-size: 14px;
+  }
+  
+  .rules ul li {
+    font-size: 11px;
+    padding: 6px 0;
+  }
+  
+  /* Game layout - stack vertically on small phones */
+  .game-container {
     flex-direction: column;
-    align-items: center;
+    gap: 12px;
+    margin-top: 8px;
+  }
+  
+  .piles-column,
+  .players-column,
+  .hints-column {
+    max-height: none;
+    overflow-y: visible;
   }
   
   .game-header {
     flex-direction: column;
-    gap: 16px;
-    text-align: center;
+    gap: 12px;
+    padding: 12px;
+  }
+  
+  .game-header h1 {
+    font-size: 24px;
   }
   
   .game-stats {
     flex-direction: column;
-    gap: 10px;
+    gap: 8px;
+    font-size: 12px;
+  }
+  
+  .game-message {
+    font-size: 14px;
+    padding: 12px 16px;
+    margin: 8px 0;
+  }
+  
+  .new-game-button {
+    width: 100%;
+    padding: 10px;
+    font-size: 12px;
+  }
+  
+  .pile-row {
+    flex-wrap: wrap;
+  }
+  
+  .hint-section {
+    padding: 12px;
+  }
+  
+  .hint-title {
+    font-size: 12px;
+  }
+  
+  .custom-hint-input {
+    font-size: 13px;
+  }
+  
+  .send-hint-button {
+    font-size: 12px;
+    padding: 8px 14px;
+  }
+  
+  .lobby-info {
+    padding: 16px;
+  }
+  
+  .player-list li {
+    font-size: 13px;
+  }
+}
+
+/* Phones and small tablets (481px - 768px) */
+@media (min-width: 481px) and (max-width: 768px) {
+  .app {
+    padding: 12px;
   }
   
   .setup-screen {
-    padding: 30px 24px;
+    padding: 32px 24px;
+    max-height: 92vh;
+    border-radius: 24px;
   }
   
   .setup-screen h1 {
-    font-size: 40px;
+    font-size: 48px;
+  }
+  
+  .subtitle {
+    font-size: 14px;
+  }
+  
+  /* Game layout - 2 columns on tablets */
+  .game-container {
+    flex-direction: column;
+    gap: 14px;
+  }
+  
+  .piles-column {
+    max-height: 40vh;
+  }
+  
+  .players-column,
+  .hints-column {
+    max-height: 50vh;
+  }
+  
+  .game-header {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  
+  .game-header h1 {
+    font-size: 28px;
+  }
+  
+  .game-stats {
+    flex-wrap: wrap;
+    gap: 10px;
+    font-size: 13px;
+  }
+  
+  .new-game-button {
+    padding: 10px 18px;
+    font-size: 13px;
+  }
+}
+
+/* Tablets (769px - 1024px) */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .app {
+    padding: 14px;
+  }
+  
+  .setup-screen {
+    padding: 40px 32px;
+    max-width: 700px;
+  }
+  
+  .setup-screen h1 {
+    font-size: 56px;
+  }
+  
+  /* Game layout - 3 columns but narrower */
+  .game-container {
+    gap: 14px;
+  }
+  
+  .piles-column,
+  .players-column,
+  .hints-column {
+    flex: 1;
+    min-width: 200px;
+  }
+  
+  .game-header h1 {
+    font-size: 32px;
+  }
+  
+  .game-stats {
+    font-size: 14px;
+    gap: 12px;
+  }
+}
+
+/* Large tablets and small desktops (1025px - 1280px) */
+@media (min-width: 1025px) and (max-width: 1280px) {
+  .app {
+    padding: 16px;
+  }
+  
+  .game-container {
+    gap: 16px;
+  }
+  
+  .piles-column,
+  .players-column,
+  .hints-column {
+    flex: 1;
+    min-width: 250px;
+  }
+}
+
+/* Landscape orientation adjustments */
+@media (max-height: 600px) and (orientation: landscape) {
+  .setup-screen {
+    max-height: 95vh;
+    padding: 20px 24px;
+    overflow-y: auto;
+  }
+  
+  .setup-screen h1 {
+    font-size: 36px;
+    margin-bottom: 8px;
+  }
+  
+  .subtitle {
+    margin-bottom: 12px;
+  }
+  
+  .setup-form {
+    gap: 10px;
+  }
+  
+  .rules {
+    margin-top: 16px;
+    max-height: 200px;
+    overflow-y: auto;
+  }
+  
+  .game-header {
+    padding: 10px 16px;
+  }
+  
+  .game-header h1 {
+    font-size: 24px;
+  }
+  
+  .game-container {
+    margin-top: 8px;
+    max-height: calc(100vh - 100px);
+  }
+  
+  .piles-column {
+    max-height: calc(100vh - 120px);
+  }
+}
+
+/* Very large screens (1920px+) */
+@media (min-width: 1920px) {
+  .app {
+    max-width: 1800px;
+    margin: 0 auto;
+  }
+  
+  .setup-screen {
+    max-width: 800px;
+    padding: 64px 48px;
+  }
+  
+  .setup-screen h1 {
+    font-size: 72px;
+  }
+  
+  .game-header h1 {
+    font-size: 42px;
+  }
+  
+  .game-stats {
+    font-size: 18px;
+  }
+  
+  .game-container {
+    gap: 24px;
+  }
+}
+
+/* Touch device optimizations */
+@media (hover: none) and (pointer: coarse) {
+  /* Larger touch targets */
+  .start-button,
+  .new-game-button,
+  .end-turn-button,
+  .send-hint-button {
+    min-height: 44px;
+  }
+  
+  .card {
+    min-width: 60px;
+    min-height: 80px;
+  }
+  
+  .setup-form input,
+  .custom-hint-input {
+    min-height: 44px;
+  }
+  
+  /* Remove hover effects on touch devices */
+  .start-button:hover,
+  .new-game-button:hover,
+  .end-turn-button:hover,
+  .card:hover {
+    transform: none;
+  }
+  
+  /* Add active states instead */
+  .start-button:active,
+  .new-game-button:active,
+  .end-turn-button:active {
+    transform: scale(0.95);
+  }
+}
+
+/* Print styles */
+@media print {
+  .app {
+    background: white;
+  }
+  
+  body::before {
+    display: none;
+  }
+  
+  .new-game-button,
+  .end-turn-button,
+  .send-hint-button,
+  .hint-section {
+    display: none;
   }
 }

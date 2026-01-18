@@ -9,7 +9,16 @@ app.use(cors());
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: {
-    origin: process.env.CLIENT_URL || "http://localhost:5173",
+    origin: (origin, callback) => {
+      // Allow any localhost origin or if no origin (like mobile apps)
+      if (!origin || origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:')) {
+        callback(null, true);
+      } else if (process.env.CLIENT_URL && origin === process.env.CLIENT_URL) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     methods: ["GET", "POST"],
     credentials: true
   }
@@ -163,18 +172,30 @@ io.on('connection', (socket) => {
     console.log(`Game started in room ${roomCode}`);
   });
 
-  // Sync game state
-  socket.on('game-action', ({ roomCode, gameState }) => {
+  // Sync game state with validation
+  socket.on('game-action', ({ roomCode, gameState }, callback) => {
     const room = gameRooms.get(roomCode);
     
     if (!room) {
       console.log('game-action: Room not found:', roomCode);
+      if (callback) callback({ error: 'Room not found' });
       return;
     }
     
     console.log(`game-action in room ${roomCode}: currentPlayer=${gameState.currentPlayer}, cardsPlayed=${gameState.cardsPlayedThisTurn}`);
+    
+    // Server sets the version (increment from stored state)
+    const oldState = room.gameState;
+    gameState.version = (oldState?.version || 0) + 1;
     room.gameState = gameState;
-    socket.to(roomCode).emit('game-update', { gameState });
+    
+    console.log(`Set version to ${gameState.version}`);
+    
+    // Broadcast to ALL players in the room (including sender)
+    io.to(roomCode).emit('game-update', { gameState });
+    
+    // Send acknowledgment back to sender
+    if (callback) callback({ success: true });
   });
 
   // Send hint

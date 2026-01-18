@@ -82,6 +82,7 @@ export function initializeGame(numPlayers, handSize = 4, minCardsPerTurn = 2) {
     handSize,
     minCardsPerTurn,
     cardsPlayedThisTurn: 0,
+    version: 0,
     gameStatus: 'playing', // 'playing', 'won', 'lost'
     hints: [],
     playLog: []

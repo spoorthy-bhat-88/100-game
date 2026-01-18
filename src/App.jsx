@@ -29,6 +29,92 @@ function App() {
   const [roomPlayers, setRoomPlayers] = useState([]);
   const [isHost, setIsHost] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [isConnected, setIsConnected] = useState(true);
+  const [pendingActions, setPendingActions] = useState([]);
+
+  // Retry mechanism for failed actions
+  const sendGameAction = (gameState, retryCount = 0) => {
+    const maxRetries = 3;
+    
+    // Queue action if disconnected
+    if (!isConnected) {
+      console.log('Offline - queuing action');
+      setPendingActions(prev => [...prev, { gameState, timestamp: Date.now() }]);
+      return;
+    }
+    
+    // Set a timeout in case callback never comes back
+    const timeout = setTimeout(() => {
+      console.error(`Timeout waiting for server response (attempt ${retryCount + 1})`);
+      if (retryCount < maxRetries) {
+        console.log(`Retrying in 1 second... (${retryCount + 1}/${maxRetries})`);
+        sendGameAction(gameState, retryCount + 1);
+      } else {
+        alert('Failed to sync game state after multiple attempts. Please refresh.');
+      }
+    }, 5000); // 5 second timeout
+    
+    socket.emit('game-action', { roomCode, gameState }, (response) => {
+      clearTimeout(timeout);
+      
+      if (!response) {
+        console.error(`No response from server (attempt ${retryCount + 1})`);
+        if (retryCount < maxRetries) {
+          console.log(`Retrying in 1 second... (${retryCount + 1}/${maxRetries})`);
+          setTimeout(() => sendGameAction(gameState, retryCount + 1), 1000);
+        } else {
+          alert('Failed to sync game state after multiple attempts. Please refresh.');
+        }
+        return;
+      }
+      
+      if (response.error) {
+        console.error(`Failed to sync game state (attempt ${retryCount + 1}):`, response.error);
+        
+        if (retryCount < maxRetries) {
+          console.log(`Retrying in 1 second... (${retryCount + 1}/${maxRetries})`);
+          setTimeout(() => sendGameAction(gameState, retryCount + 1), 1000);
+        } else {
+          alert('Failed to sync game state after multiple attempts. Please refresh.');
+        }
+      } else {
+        console.log('Game state synced successfully', response);
+      }
+    });
+  };
+
+  useEffect(() => {
+    // Monitor connection status
+    socket.on('connect', () => {
+      console.log('Connected to server');
+      setIsConnected(true);
+      
+      // Process pending actions when reconnected
+      if (pendingActions.length > 0) {
+        console.log(`Processing ${pendingActions.length} pending actions...`);
+        pendingActions.forEach(action => {
+          sendGameAction(action.gameState);
+        });
+        setPendingActions([]);
+      }
+    });
+
+    socket.on('disconnect', () => {
+      console.log('Disconnected from server');
+      setIsConnected(false);
+    });
+
+    socket.on('connect_error', (error) => {
+      console.error('Connection error:', error);
+      setIsConnected(false);
+    });
+
+    return () => {
+      socket.off('connect');
+      socket.off('disconnect');
+      socket.off('connect_error');
+    };
+  }, [pendingActions]);
 
   useEffect(() => {
     // Try to rejoin from localStorage on mount
@@ -97,25 +183,34 @@ function App() {
     });
 
     socket.on('game-update', ({ gameState: newGameState }) => {
-      console.log('Received game-update:', newGameState.currentPlayer, newGameState.cardsPlayedThisTurn);
-      setGameState(newGameState);
-      setSelectedCard(null);
+      console.log('Received game-update:', newGameState.currentPlayer, newGameState.cardsPlayedThisTurn, 'version:', newGameState.version);
+      
+      // Only update if version is newer or equal
+      if (!gameState || !newGameState.version || !gameState.version || newGameState.version >= gameState.version) {
+        setGameState(newGameState);
+        setSelectedCard(null);
+      } else {
+        console.log('Ignoring older state version:', newGameState.version, 'current:', gameState.version);
+      }
     });
 
     socket.on('hint-received', ({ hint }) => {
-      if (gameState) {
+      setGameState(prevState => {
+        if (!prevState) return prevState;
+        
         const logEntry = {
           type: 'hint',
           player: hint.player,
           text: `💡 ${hint.player}: ${hint.text}`,
           timestamp: hint.timestamp
         };
-        setGameState({ 
-          ...gameState, 
-          hints: [...gameState.hints, hint],
-          playLog: [...(gameState.playLog || []), logEntry]
-        });
-      }
+        
+        return { 
+          ...prevState, 
+          hints: [...prevState.hints, hint],
+          playLog: [...(prevState.playLog || []), logEntry]
+        };
+      });
     });
 
     socket.on('error', ({ message }) => {
@@ -216,11 +311,11 @@ function App() {
         updatedGameState = { ...updatedGameState, playLog: updatedLog };
       }
       
-      setGameState(updatedGameState);
+      // Don't update local state - wait for server broadcast
       setSelectedCard(null);
-      // Broadcast to other players
+      // Broadcast to server (which will broadcast back to all players including us)
       console.log('Broadcasting game-action:', updatedGameState.currentPlayer, updatedGameState.cardsPlayedThisTurn);
-      socket.emit('game-action', { roomCode, gameState: updatedGameState });
+      sendGameAction(updatedGameState);
     } else {
       alert(result.error);
     }
@@ -234,10 +329,10 @@ function App() {
     
     if (result.success) {
       console.log('End turn - Broadcasting:', result.newGameState.currentPlayer, result.newGameState.cardsPlayedThisTurn);
-      setGameState(result.newGameState);
+      // Don't update local state - wait for server broadcast
       setSelectedCard(null);
-      // Broadcast to other players
-      socket.emit('game-action', { roomCode, gameState: result.newGameState });
+      // Broadcast to server
+      sendGameAction(result.newGameState);
     } else {
       alert(result.error);
     }
@@ -451,6 +546,9 @@ function App() {
         <div className="game-stats">
           <span>Deck: {gameState.deck.length}</span>
           <span>Player {gameState.currentPlayer + 1}'s Turn</span>
+          {!isConnected && (
+            <span className="connection-warning">⚠️ Disconnected</span>
+          )}
           {myPlayerIndex === gameState.currentPlayer && (
             <span className="turn-progress">
               Cards played: {gameState.cardsPlayedThisTurn}/{gameState.minCardsPerTurn}
