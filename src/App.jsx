@@ -97,6 +97,7 @@ function App() {
     });
 
     socket.on('game-update', ({ gameState: newGameState }) => {
+      console.log('Received game-update:', newGameState.currentPlayer, newGameState.cardsPlayedThisTurn);
       setGameState(newGameState);
       setSelectedCard(null);
     });
@@ -218,6 +219,7 @@ function App() {
       setGameState(updatedGameState);
       setSelectedCard(null);
       // Broadcast to other players
+      console.log('Broadcasting game-action:', updatedGameState.currentPlayer, updatedGameState.cardsPlayedThisTurn);
       socket.emit('game-action', { roomCode, gameState: updatedGameState });
     } else {
       alert(result.error);
@@ -231,6 +233,7 @@ function App() {
     const result = endTurn(gameState);
     
     if (result.success) {
+      console.log('End turn - Broadcasting:', result.newGameState.currentPlayer, result.newGameState.cardsPlayedThisTurn);
       setGameState(result.newGameState);
       setSelectedCard(null);
       // Broadcast to other players

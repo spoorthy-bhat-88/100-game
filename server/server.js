@@ -168,9 +168,11 @@ io.on('connection', (socket) => {
     const room = gameRooms.get(roomCode);
     
     if (!room) {
+      console.log('game-action: Room not found:', roomCode);
       return;
     }
     
+    console.log(`game-action in room ${roomCode}: currentPlayer=${gameState.currentPlayer}, cardsPlayed=${gameState.cardsPlayedThisTurn}`);
     room.gameState = gameState;
     socket.to(roomCode).emit('game-update', { gameState });
   });
