@@ -32,6 +32,9 @@ const io = new Server(httpServer, {
 // Store active game rooms
 const gameRooms = new Map();
 
+// Room expiration settings
+const ROOM_LIFETIME_MS = 3 * 60 * 60 * 1000; // 3 hours in milliseconds
+
 // MongoDB connection
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/hundred-game';
 let db;
@@ -40,11 +43,23 @@ let roomsCollection;
 // Connect to MongoDB
 async function connectDB() {
   try {
-    const client = new MongoClient(MONGODB_URI);
+    console.log('🔄 Connecting to MongoDB...');
+    console.log('   URI:', MONGODB_URI.replace(/\/\/([^:]+):([^@]+)@/, '//$1:****@')); // Hide password in logs
+    
+    // Configure MongoDB client options
+    const options = {
+      // Disable SSL for local MongoDB
+      tls: false,
+      // Set timeouts
+      serverSelectionTimeoutMS: 5000,
+      connectTimeoutMS: 10000,
+    };
+    
+    const client = new MongoClient(MONGODB_URI, options);
     await client.connect();
     db = client.db();
     roomsCollection = db.collection('rooms');
-    console.log('Connected to MongoDB');
+    console.log('✅ Connected to MongoDB');
     
     // Create index on room code for faster lookups
     await roomsCollection.createIndex({ code: 1 }, { unique: true });
@@ -52,8 +67,8 @@ async function connectDB() {
     // Load existing rooms into memory
     await loadGameRooms();
   } catch (error) {
-    console.error('Failed to connect to MongoDB:', error);
-    console.log('Continuing without database persistence');
+    console.error('❌ Failed to connect to MongoDB:', error.message);
+    console.log('⚠️  Continuing without database persistence');
   }
 }
 
@@ -62,31 +77,59 @@ async function loadGameRooms() {
   try {
     if (!roomsCollection) return;
     
+    console.log('📥 Loading game rooms from MongoDB...');
     const rooms = await roomsCollection.find({}).toArray();
     rooms.forEach(room => {
       gameRooms.set(room.code, room);
     });
-    console.log(`Loaded ${rooms.length} game rooms from database`);
+    console.log(`✅ Loaded ${rooms.length} game room(s) from database`);
+    if (rooms.length > 0) {
+      rooms.forEach(room => {
+        console.log(`   - Room ${room.code}: ${room.players.length}/${room.numPlayers} players, started: ${room.started}`);
+      });
+    }
   } catch (error) {
-    console.error('Error loading game rooms:', error);
+    console.error('❌ Error loading game rooms:', error);
   }
 }
 
 // Save a single room to database
 async function saveRoom(roomCode) {
   try {
-    if (!roomsCollection) return;
+    if (!roomsCollection) {
+      console.log('⚠️  Database not connected - room not saved');
+      return;
+    }
     
     const room = gameRooms.get(roomCode);
-    if (!room) return;
+    if (!room) {
+      console.log(`⚠️  Room ${roomCode} not found in memory - cannot save`);
+      return;
+    }
     
-    await roomsCollection.updateOne(
+    console.log(`💾 Saving room ${roomCode} to MongoDB...`);
+    console.log(`   Players: ${room.players.length}/${room.numPlayers}`);
+    console.log(`   Started: ${room.started}`);
+    console.log(`   Created: ${room.createdAt ? new Date(room.createdAt).toLocaleString() : 'Unknown'}`);
+    if (room.gameState) {
+      console.log(`   Game state version: ${room.gameState.version || 'N/A'}`);
+    }
+    
+    const result = await roomsCollection.updateOne(
       { code: roomCode },
       { $set: room },
       { upsert: true }
     );
+    
+    if (result.upsertedCount > 0) {
+      console.log(`✅ Created new room ${roomCode} in database`);
+    } else if (result.modifiedCount > 0) {
+      console.log(`✅ Updated room ${roomCode} in database`);
+    } else {
+      console.log(`ℹ️  Room ${roomCode} unchanged in database`);
+    }
   } catch (error) {
-    console.error('Error saving room:', error);
+    console.error('❌ Error saving room:', error);
   }
 }
 
@@ -95,15 +138,43 @@ async function deleteRoom(roomCode) {
   try {
     if (!roomsCollection) return;
     
-    await roomsCollection.deleteOne({ code: roomCode });
-    console.log(`Deleted room ${roomCode} from database`);
+    console.log(`🗑️  Deleting room ${roomCode} from MongoDB...`);
+    const result = await roomsCollection.deleteOne({ code: roomCode });
+    
+    if (result.deletedCount > 0) {
+      console.log(`✅ Deleted room ${roomCode} from database`);
+    } else {
+      console.log(`ℹ️  Room ${roomCode} not found in database`);
+    }
   } catch (error) {
-    console.error('Error deleting room:', error);
+    console.error('❌ Error deleting room:', error);
   }
 }
 
 // Connect to database on startup
 connectDB();
+
+// Cleanup expired rooms every 10 minutes
+setInterval(async () => {
+  console.log('🧹 Running room cleanup...');
+  const now = Date.now();
+  let expiredCount = 0;
+  
+  for (const [roomCode, room] of gameRooms.entries()) {
+    if (room.createdAt && (now - room.createdAt) > ROOM_LIFETIME_MS) {
+      console.log(`⏰ Room ${roomCode} expired (created ${new Date(room.createdAt).toLocaleString()})`);
+      gameRooms.delete(roomCode);
+      await deleteRoom(roomCode);
+      expiredCount++;
+    }
+  }
+  
+  if (expiredCount > 0) {
+    console.log(`✅ Cleaned up ${expiredCount} expired room(s)`);
+  } else {
+    console.log('✅ No expired rooms found');
+  }
+}, 10 * 60 * 1000); // Run every 10 minutes
 
 // Generate random room code
 function generateRoomCode() {
@@ -127,7 +198,8 @@ io.on('connection', (socket) => {
         playerIndex: 0
       }],
       gameState: null,
-      started: false
+      started: false,
+      createdAt: Date.now() // Timestamp for room expiration
     };
     
     gameRooms.set(roomCode, room);
@@ -298,13 +370,15 @@ io.on('connection', (socket) => {
       if (playerIndex !== -1) {
         room.players.splice(playerIndex, 1);
         
-        // If room is empty, delete it
+        // Keep room alive for 3 hours even if empty
+        console.log(`Player left room ${roomCode}. Room will expire in ${Math.round((ROOM_LIFETIME_MS - (Date.now() - room.createdAt)) / 1000 / 60)} minutes`);
+        
         if (room.players.length === 0) {
-          gameRooms.delete(roomCode);
-          await deleteRoom(roomCode);
-          console.log(`Room ${roomCode} deleted (empty)`);
-        } else {
-          // Update remaining players
+          console.log(`Room ${roomCode} is now empty but will be kept for rejoining`);
+        }
+        
+        // Update remaining players
+        if (room.players.length > 0) {
           io.to(roomCode).emit('room-update', { 
             players: room.players,
             numPlayers: room.numPlayers,
@@ -316,10 +390,10 @@ io.on('connection', (socket) => {
               message: 'A player disconnected' 
             });
           }
-          
-          // Save updated room state
-          await saveRoom(roomCode);
         }
+        
+        // Save updated room state (or empty room for rejoining)
+        await saveRoom(roomCode);
         break;
       }
     }
