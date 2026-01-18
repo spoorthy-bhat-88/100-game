@@ -512,13 +512,21 @@ function App() {
           </div>
           
           {/* End Turn Button */}
-          {myPlayerIndex === gameState.currentPlayer && gameState.cardsPlayedThisTurn >= gameState.minCardsPerTurn && (
-            <button 
-              className="end-turn-button" 
-              onClick={handleEndTurn}
-            >
-              ✓ End Turn
-            </button>
+          {myPlayerIndex === gameState.currentPlayer && (
+            <div>
+              {/* Debug info */}
+              <p style={{fontSize: '12px', color: '#666'}}>
+                Cards played: {gameState.cardsPlayedThisTurn || 0} / Min required: {gameState.minCardsPerTurn || 0}
+              </p>
+              {gameState.cardsPlayedThisTurn >= gameState.minCardsPerTurn && (
+                <button 
+                  className="end-turn-button" 
+                  onClick={handleEndTurn}
+                >
+                  ✓ End Turn
+                </button>
+              )}
+            </div>
           )}
         </div>
 

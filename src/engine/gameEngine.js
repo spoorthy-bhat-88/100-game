@@ -127,19 +127,15 @@ export function playCard(gameState, playerIndex, cardIndex, pileType) {
     return { success: false, error: "Invalid move!" };
   }
   
-  // Make the play
+  // Make the play - remove card from hand
   const newHands = hands.map((hand, i) => 
     i === playerIndex 
       ? hand.filter((_, idx) => idx !== cardIndex)
       : hand
   );
   
-  // Draw a card if deck has cards
-  if (deck.length > 0) {
-    newHands[playerIndex].push(deck[0]);
-  }
-  
-  const newDeck = deck.slice(1);
+  // Don't draw cards yet - wait until turn ends
+  const newDeck = deck;
   
   // Update the appropriate pile
   const newAscending1 = pileType === 'ascending1' ? card : ascending1;
@@ -198,7 +194,7 @@ export function playCard(gameState, playerIndex, cardIndex, pileType) {
 }
 
 export function endTurn(gameState) {
-  const { currentPlayer, cardsPlayedThisTurn, minCardsPerTurn } = gameState;
+  const { currentPlayer, cardsPlayedThisTurn, minCardsPerTurn, hands, deck } = gameState;
   
   // Can only end turn if minimum cards have been played
   if (cardsPlayedThisTurn < minCardsPerTurn) {
@@ -208,10 +204,23 @@ export function endTurn(gameState) {
     };
   }
   
+  // Draw cards equal to the number of cards played this turn
+  const newHands = [...hands];
+  let newDeck = [...deck];
+  let cardsDrawn = 0;
+  
+  for (let i = 0; i < cardsPlayedThisTurn && newDeck.length > 0; i++) {
+    newHands[currentPlayer].push(newDeck[0]);
+    newDeck = newDeck.slice(1);
+    cardsDrawn++;
+  }
+  
   const nextPlayer = (currentPlayer + 1) % gameState.numPlayers;
   
   const newGameState = {
     ...gameState,
+    hands: newHands,
+    deck: newDeck,
     currentPlayer: nextPlayer,
     cardsPlayedThisTurn: 0
   };
