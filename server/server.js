@@ -115,9 +115,12 @@ async function saveRoom(roomCode) {
       console.log(`   Game state version: ${room.gameState.version || 'N/A'}`);
     }
     
+    // Remove _id field to prevent immutable field error
+    const { _id, ...roomData } = room;
+    
     const result = await roomsCollection.updateOne(
       { code: roomCode },
-      { $set: room },
+      { $set: roomData },
       { upsert: true }
     );
     
