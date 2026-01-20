@@ -250,6 +250,25 @@ function App() {
     };
   }, [gameState, playerName]);
 
+  // Auto-skip turn if current player has no cards
+  useEffect(() => {
+    if (!gameState || myPlayerIndex !== gameState.currentPlayer) return;
+    
+    const currentHand = gameState.hands[myPlayerIndex] || [];
+    
+    // If this player has no cards, automatically end their turn
+    if (currentHand.length === 0) {
+      console.log('Auto-skipping turn - player has no cards');
+      setTimeout(() => {
+        // Create a fake endTurn that just advances to next player
+        const result = endTurn(gameState);
+        if (result.success) {
+          sendGameAction(result.newGameState);
+        }
+      }, 1000); // Small delay so the message is visible
+    }
+  }, [gameState, myPlayerIndex]);
+
   const createRoom = () => {
     if (!playerName.trim()) {
       setErrorMessage('Please enter your name');
@@ -592,7 +611,8 @@ function App() {
           )}
           {myPlayerIndex === gameState.currentPlayer && (
             <span className="turn-progress">
-              Cards played: {gameState.cardsPlayedThisTurn}/{gameState.minCardsPerTurn}
+              Cards played: {gameState.cardsPlayedThisTurn}/{gameState.deck.length === 0 ? 1 : gameState.minCardsPerTurn}
+              {gameState.deck.length === 0 && ' 🃏'}
             </span>
           )}
         </div>
@@ -610,6 +630,18 @@ function App() {
       {gameState.gameStatus === 'lost' && (
         <div className="game-message defeat">
           😞 Game Over! No legal moves remaining.
+        </div>
+      )}
+      
+      {/* Show when current player has no cards */}
+      {currentHand.length === 0 && myPlayerIndex === gameState.currentPlayer && (
+        <div className="game-message" style={{backgroundColor: '#4CAF50', color: 'white'}}>
+          ✨ You're out of cards! Your turn is being skipped.
+        </div>
+      )}
+      {currentHand.length === 0 && myPlayerIndex !== gameState.currentPlayer && (
+        <div className="game-message" style={{backgroundColor: '#2196F3', color: 'white'}}>
+          ✨ You're out of cards! Waiting for others to finish...
         </div>
       )}
 
@@ -666,9 +698,10 @@ function App() {
             <div>
               {/* Debug info */}
               <p style={{fontSize: '12px', color: '#666'}}>
-                Cards played: {gameState.cardsPlayedThisTurn || 0} / Min required: {gameState.minCardsPerTurn || 0}
+                Cards played: {gameState.cardsPlayedThisTurn || 0} / Min required: {gameState.deck.length === 0 ? 1 : (gameState.minCardsPerTurn || 0)}
+                {gameState.deck.length === 0 && ' (Deck empty!)'}
               </p>
-              {gameState.cardsPlayedThisTurn >= gameState.minCardsPerTurn && (
+              {gameState.cardsPlayedThisTurn >= (gameState.deck.length === 0 ? 1 : gameState.minCardsPerTurn) && (
                 <button 
                   className="end-turn-button" 
                   onClick={handleEndTurn}

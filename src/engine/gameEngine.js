@@ -197,13 +197,37 @@ export function playCard(gameState, playerIndex, cardIndex, pileType) {
 }
 
 export function endTurn(gameState) {
-  const { currentPlayer, cardsPlayedThisTurn, minCardsPerTurn, hands, deck } = gameState;
+  const { currentPlayer, cardsPlayedThisTurn, minCardsPerTurn, hands, deck, numPlayers } = gameState;
+  
+  // If current player has no cards, allow them to skip without playing
+  if (hands[currentPlayer].length === 0) {
+    // Skip to next player with cards
+    let nextPlayer = (currentPlayer + 1) % numPlayers;
+    let skippedPlayers = 0;
+    
+    while (hands[nextPlayer].length === 0 && skippedPlayers < numPlayers) {
+      nextPlayer = (nextPlayer + 1) % numPlayers;
+      skippedPlayers++;
+    }
+    
+    return {
+      success: true,
+      newGameState: {
+        ...gameState,
+        currentPlayer: nextPlayer,
+        cardsPlayedThisTurn: 0
+      }
+    };
+  }
+  
+  // When deck is empty, only require 1 card per turn; otherwise use configured minimum
+  const requiredCards = deck.length === 0 ? 1 : minCardsPerTurn;
   
   // Can only end turn if minimum cards have been played
-  if (cardsPlayedThisTurn < minCardsPerTurn) {
+  if (cardsPlayedThisTurn < requiredCards) {
     return { 
       success: false, 
-      error: `You must play at least ${minCardsPerTurn} card${minCardsPerTurn > 1 ? 's' : ''} per turn!` 
+      error: `You must play at least ${requiredCards} card${requiredCards > 1 ? 's' : ''} per turn!${deck.length === 0 ? ' (Deck empty - only 1 card required)' : ''}` 
     };
   }
   
@@ -218,7 +242,14 @@ export function endTurn(gameState) {
     cardsDrawn++;
   }
   
-  const nextPlayer = (currentPlayer + 1) % gameState.numPlayers;
+  // Find next player with cards (skip players with empty hands)
+  let nextPlayer = (currentPlayer + 1) % numPlayers;
+  let skippedPlayers = 0;
+  
+  while (newHands[nextPlayer].length === 0 && skippedPlayers < numPlayers) {
+    nextPlayer = (nextPlayer + 1) % numPlayers;
+    skippedPlayers++;
+  }
   
   const newGameState = {
     ...gameState,

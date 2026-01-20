@@ -44,22 +44,29 @@ let roomsCollection;
 async function connectDB() {
   try {
     console.log('🔄 Connecting to MongoDB...');
-    console.log('   URI:', MONGODB_URI.replace(/\/\/([^:]+):([^@]+)@/, '//$1:****@')); // Hide password in logs
+    const uriDisplay = MONGODB_URI.replace(/\/\/([^:]+):([^@]+)@/, '//$1:****@');
+    console.log('   URI:', uriDisplay);
+    
+    // Detect if using local or cloud MongoDB
+    const isLocal = MONGODB_URI.includes('localhost') || MONGODB_URI.includes('127.0.0.1');
     
     // Configure MongoDB client options
     const options = {
-      // Disable SSL for local MongoDB
-      tls: false,
+      // Disable SSL for local MongoDB, enable for cloud
+      tls: !isLocal,
       // Set timeouts
       serverSelectionTimeoutMS: 5000,
       connectTimeoutMS: 10000,
     };
     
+    console.log(`   Connection type: ${isLocal ? 'Local' : 'Cloud (MongoDB Atlas)'}`);
+    console.log(`   TLS/SSL: ${options.tls ? 'Enabled' : 'Disabled'}`);
+    
     const client = new MongoClient(MONGODB_URI, options);
     await client.connect();
     db = client.db();
     roomsCollection = db.collection('rooms');
-    console.log('✅ Connected to MongoDB');
+    console.log('✅ Connected to MongoDB successfully!');
     
     // Create index on room code for faster lookups
     await roomsCollection.createIndex({ code: 1 }, { unique: true });
@@ -69,6 +76,17 @@ async function connectDB() {
   } catch (error) {
     console.error('❌ Failed to connect to MongoDB:', error.message);
     console.log('⚠️  Continuing without database persistence');
+    console.log('');
+    console.log('💡 To enable persistence:');
+    if (error.message.includes('ECONNREFUSED')) {
+      console.log('   - Install MongoDB: brew install mongodb-community');
+      console.log('   - Start MongoDB: brew services start mongodb-community');
+    } else {
+      console.log('   - Check your MONGODB_URI environment variable');
+      console.log('   - Ensure your database is accessible');
+      console.log('   - For MongoDB Atlas, check your network access settings');
+    }
+    console.log('');
   }
 }
 
@@ -414,17 +432,39 @@ io.on('connection', (socket) => {
 const PORT = process.env.PORT || 3001;
 httpServer.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+  console.log(`🎮 Game server is ready!`);
+  if (!roomsCollection) {
+    console.log(`⚠️  Running without database - game state will not persist across restarts`);
+  }
 });
 
-// Graceful shutdown - save state on exit
-process.on('SIGINT', () => {
+// Graceful shutdown
+process.on('SIGINT', async () => {
   console.log('\nShutting down gracefully...');
-  saveGameRooms();
+  
+  // Save all active rooms to database if connected
+  if (roomsCollection) {
+    console.log('Saving active rooms...');
+    for (const [roomCode] of gameRooms.entries()) {
+      await saveRoom(roomCode);
+    }
+    console.log('All rooms saved.');
+  }
+  
   process.exit(0);
 });
 
-process.on('SIGTERM', () => {
+process.on('SIGTERM', async () => {
   console.log('\nShutting down gracefully...');
-  saveGameRooms();
+  
+  // Save all active rooms to database if connected
+  if (roomsCollection) {
+    console.log('Saving active rooms...');
+    for (const [roomCode] of gameRooms.entries()) {
+      await saveRoom(roomCode);
+    }
+    console.log('All rooms saved.');
+  }
+  
   process.exit(0);
 });
