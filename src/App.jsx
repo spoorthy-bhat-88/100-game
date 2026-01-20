@@ -644,13 +644,13 @@ function App() {
         </div>
       )}
       
-      {/* Show when current player has no cards */}
-      {currentHand.length === 0 && myPlayerIndex === gameState.currentPlayer && (
+      {/* Show when current player has no cards but game is still ongoing */}
+      {gameState.gameStatus === 'playing' && currentHand.length === 0 && myPlayerIndex === gameState.currentPlayer && (
         <div className="game-message" style={{backgroundColor: '#4CAF50', color: 'white'}}>
           ✨ You're out of cards! Your turn is being skipped.
         </div>
       )}
-      {currentHand.length === 0 && myPlayerIndex !== gameState.currentPlayer && (
+      {gameState.gameStatus === 'playing' && currentHand.length === 0 && myPlayerIndex !== gameState.currentPlayer && (
         <div className="game-message" style={{backgroundColor: '#2196F3', color: 'white'}}>
           ✨ You're out of cards! Waiting for others to finish...
         </div>
