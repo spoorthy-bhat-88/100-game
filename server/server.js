@@ -188,13 +188,15 @@ io.on('connection', (socket) => {
   console.log('User connected:', socket.id);
 
   // Create a new game room
-  socket.on('create-room', async ({ playerName, numPlayers, handSize, minCardsPerTurn }) => {
+  socket.on('create-room', async ({ playerName, numPlayers, handSize, minCardsPerTurn, maxCard, backtrackAmount }) => {
     const roomCode = generateRoomCode();
     const room = {
       code: roomCode,
       numPlayers,
       handSize: handSize || 4,
       minCardsPerTurn: minCardsPerTurn || 2,
+      maxCard: maxCard || 99,
+      backtrackAmount: backtrackAmount || 10,
       players: [{
         id: socket.id,
         name: playerName,
@@ -214,11 +216,13 @@ io.on('connection', (socket) => {
       numPlayers: room.numPlayers,
       handSize: room.handSize,
       minCardsPerTurn: room.minCardsPerTurn,
+      maxCard: room.maxCard,
+      backtrackAmount: room.backtrackAmount,
       started: room.started
     });
     
     await saveRoom(roomCode); // Save to database
-    console.log(`Room ${roomCode} created by ${playerName} with ${handSize || 4} cards per player and ${minCardsPerTurn || 2} min cards per turn`);
+    console.log(`Room ${roomCode} created by ${playerName} with ${handSize || 4} cards, ${minCardsPerTurn || 2} min per turn, max card ${maxCard || 99}, backtrack ${backtrackAmount || 10}`);
   });
 
   // Join an existing room
@@ -252,6 +256,10 @@ io.on('connection', (socket) => {
     io.to(roomCode).emit('room-update', { 
       players: room.players,
       numPlayers: room.numPlayers,
+      handSize: room.handSize,
+      minCardsPerTurn: room.minCardsPerTurn,
+      maxCard: room.maxCard,
+      backtrackAmount: room.backtrackAmount,
       started: room.started
     });
     
