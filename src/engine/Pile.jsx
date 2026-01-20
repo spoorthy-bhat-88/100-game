@@ -1,12 +1,12 @@
 import React from 'react';
 import './Pile.css';
 
-function Pile({ type, topCard, onCardDrop, canAcceptCard, label }) {
+function Pile({ type, topCard, onCardDrop, canAcceptCard, label, backtrackAmount = 10, maxCard = 99 }) {
   const isAscending = type === 'ascending';
   const direction = isAscending ? '↑' : '↓';
   const pileLabel = label || (isAscending ? 'Ascending Pile' : 'Descending Pile');
-  const alternateValue = isAscending ? topCard - 10 : topCard + 10;
-  const showAlternate = alternateValue >= 1 && alternateValue <= 99;
+  const alternateValue = isAscending ? topCard - backtrackAmount : topCard + backtrackAmount;
+  const showAlternate = alternateValue >= 1 && alternateValue <= maxCard;
   
   return (
     <div className={`pile ${type}`}>

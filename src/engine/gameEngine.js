@@ -1,9 +1,9 @@
 // Game Engine for the 100 Card Game
 
-export function createDeck() {
-  // Create cards numbered 1-99 (excluding 0 and 100 since they're starting pile values)
+export function createDeck(maxCard = 99) {
+  // Create cards numbered 1 to maxCard (excluding 0 and maxCard+1 since they're starting pile values)
   const deck = [];
-  for (let i = 1; i <= 99; i++) {
+  for (let i = 1; i <= maxCard; i++) {
     deck.push(i);
   }
   return deck;
@@ -36,29 +36,29 @@ export function dealInitialHands(deck, numPlayers, handSize = 4) {
   return { hands, remainingDeck };
 }
 
-export function isValidPlay(card, pileTop, isAscending) {
+export function isValidPlay(card, pileTop, isAscending, backtrackAmount = 10) {
   if (isAscending) {
-    // Can play cards greater than top, OR exactly 10 less than top
-    return card > pileTop || card === pileTop - 10;
+    // Can play cards greater than top, OR exactly backtrackAmount less than top
+    return card > pileTop || card === pileTop - backtrackAmount;
   } else {
-    // Can play cards less than top, OR exactly 10 more than top
-    return card < pileTop || card === pileTop + 10;
+    // Can play cards less than top, OR exactly backtrackAmount more than top
+    return card < pileTop || card === pileTop + backtrackAmount;
   }
 }
 
-export function hasLegalMove(hand, piles) {
+export function hasLegalMove(hand, piles, backtrackAmount = 10) {
   return hand.some(card => 
-    isValidPlay(card, piles.ascending1, true) || 
-    isValidPlay(card, piles.ascending2, true) ||
-    isValidPlay(card, piles.descending1, false) || 
-    isValidPlay(card, piles.descending2, false)
+    isValidPlay(card, piles.ascending1, true, backtrackAmount) || 
+    isValidPlay(card, piles.ascending2, true, backtrackAmount) ||
+    isValidPlay(card, piles.descending1, false, backtrackAmount) || 
+    isValidPlay(card, piles.descending2, false, backtrackAmount)
   );
 }
 
-export function checkLossCondition(hands, piles, currentPlayer) {
+export function checkLossCondition(hands, piles, currentPlayer, backtrackAmount = 10) {
   // Game is lost if the current player has no legal move
   const currentHand = hands[currentPlayer];
-  return currentHand.length > 0 && !hasLegalMove(currentHand, piles);
+  return currentHand.length > 0 && !hasLegalMove(currentHand, piles, backtrackAmount);
 }
 
 export function checkWinCondition(hands, deck) {
@@ -66,8 +66,8 @@ export function checkWinCondition(hands, deck) {
   return deck.length === 0 && hands.every(hand => hand.length === 0);
 }
 
-export function initializeGame(numPlayers, handSize = 4, minCardsPerTurn = 2) {
-  const deck = shuffleDeck(createDeck());
+export function initializeGame(numPlayers, handSize = 4, minCardsPerTurn = 2, maxCard = 99, backtrackAmount = 10) {
+  const deck = shuffleDeck(createDeck(maxCard));
   const { hands, remainingDeck } = dealInitialHands(deck, numPlayers, handSize);
   
   return {
@@ -75,12 +75,14 @@ export function initializeGame(numPlayers, handSize = 4, minCardsPerTurn = 2) {
     hands,
     ascending1: 0,
     ascending2: 0,
-    descending1: 100,
-    descending2: 100,
+    descending1: maxCard + 1,
+    descending2: maxCard + 1,
     currentPlayer: 0,
     numPlayers,
     handSize,
     minCardsPerTurn,
+    maxCard,
+    backtrackAmount,
     cardsPlayedThisTurn: 0,
     version: 0,
     gameStatus: 'playing', // 'playing', 'won', 'lost'
@@ -90,7 +92,7 @@ export function initializeGame(numPlayers, handSize = 4, minCardsPerTurn = 2) {
 }
 
 export function playCard(gameState, playerIndex, cardIndex, pileType) {
-  const { hands, deck, ascending1, ascending2, descending1, descending2, currentPlayer, minCardsPerTurn, cardsPlayedThisTurn } = gameState;
+  const { hands, deck, ascending1, ascending2, descending1, descending2, currentPlayer, minCardsPerTurn, cardsPlayedThisTurn, backtrackAmount = 10 } = gameState;
   
   // Validate it's the current player's turn
   if (playerIndex !== currentPlayer) {
@@ -124,7 +126,7 @@ export function playCard(gameState, playerIndex, cardIndex, pileType) {
   }
   
   // Validate the play
-  if (!isValidPlay(card, pileTop, isAscending)) {
+  if (!isValidPlay(card, pileTop, isAscending, backtrackAmount)) {
     return { success: false, error: "Invalid move!" };
   }
   
@@ -187,7 +189,7 @@ export function playCard(gameState, playerIndex, cardIndex, pileType) {
   
   if (checkWinCondition(newHands, newDeck)) {
     newGameState.gameStatus = 'won';
-  } else if (checkLossCondition(newHands, piles, nextPlayer)) {
+  } else if (checkLossCondition(newHands, piles, nextPlayer, backtrackAmount)) {
     newGameState.gameStatus = 'lost';
   }
   

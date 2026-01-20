@@ -18,6 +18,8 @@ function App() {
   const [numPlayers, setNumPlayers] = useState(2);
   const [handSize, setHandSize] = useState(4);
   const [minCardsPerTurn, setMinCardsPerTurn] = useState(2);
+  const [maxCard, setMaxCard] = useState(99);
+  const [backtrackAmount, setBacktrackAmount] = useState(10);
   const [selectedCard, setSelectedCard] = useState(null);
   const [customHint, setCustomHint] = useState('');
   
@@ -39,7 +41,13 @@ function App() {
     // Queue action if disconnected
     if (!isConnected) {
       console.log('Offline - queuing action');
-      setPendingActions(prev => [...prev, { gameState, timestamp: Date.now() }]);
+      // Check if this version is already queued to prevent duplicates
+      const alreadyQueued = pendingActions.some(a => a.gameState.version === gameState.version);
+      if (!alreadyQueued) {
+        setPendingActions(prev => [...prev, { gameState, timestamp: Date.now() }]);
+      } else {
+        console.log('Action already queued, skipping duplicate');
+      }
       return;
     }
     
@@ -50,7 +58,8 @@ function App() {
         console.log(`Retrying in 1 second... (${retryCount + 1}/${maxRetries})`);
         sendGameAction(gameState, retryCount + 1);
       } else {
-        alert('Failed to sync game state after multiple attempts. Please refresh.');
+        console.error('Failed to sync game state after multiple attempts.');
+        // Don't alert on every failure, just log it
       }
     }, 5000); // 5 second timeout
     
@@ -63,7 +72,7 @@ function App() {
           console.log(`Retrying in 1 second... (${retryCount + 1}/${maxRetries})`);
           setTimeout(() => sendGameAction(gameState, retryCount + 1), 1000);
         } else {
-          alert('Failed to sync game state after multiple attempts. Please refresh.');
+          console.error('Failed to sync game state after multiple attempts.');
         }
         return;
       }
@@ -75,7 +84,7 @@ function App() {
           console.log(`Retrying in 1 second... (${retryCount + 1}/${maxRetries})`);
           setTimeout(() => sendGameAction(gameState, retryCount + 1), 1000);
         } else {
-          alert('Failed to sync game state after multiple attempts. Please refresh.');
+          console.error('Failed to sync game state after multiple attempts.');
         }
       } else {
         console.log('Game state synced successfully', response);
@@ -158,7 +167,7 @@ function App() {
       localStorage.setItem('playerName', playerName);
     });
 
-    socket.on('room-update', ({ players, numPlayers: total, handSize: roomHandSize, minCardsPerTurn: roomMinCards, started }) => {
+    socket.on('room-update', ({ players, numPlayers: total, handSize: roomHandSize, minCardsPerTurn: roomMinCards, maxCard: roomMaxCard, backtrackAmount: roomBacktrack, started }) => {
       setRoomPlayers(players);
       setNumPlayers(total);
       if (roomHandSize) {
@@ -166,6 +175,12 @@ function App() {
       }
       if (roomMinCards) {
         setMinCardsPerTurn(roomMinCards);
+      }
+      if (roomMaxCard) {
+        setMaxCard(roomMaxCard);
+      }
+      if (roomBacktrack) {
+        setBacktrackAmount(roomBacktrack);
       }
     });
 
@@ -185,12 +200,12 @@ function App() {
     socket.on('game-update', ({ gameState: newGameState }) => {
       console.log('Received game-update:', newGameState.currentPlayer, newGameState.cardsPlayedThisTurn, 'version:', newGameState.version);
       
-      // Only update if version is newer or equal
-      if (!gameState || !newGameState.version || !gameState.version || newGameState.version >= gameState.version) {
+      // Only update if version is strictly newer (changed from >=)
+      if (!gameState || !newGameState.version || !gameState.version || newGameState.version > gameState.version) {
         setGameState(newGameState);
         setSelectedCard(null);
       } else {
-        console.log('Ignoring older state version:', newGameState.version, 'current:', gameState.version);
+        console.log('Ignoring duplicate/older state version:', newGameState.version, 'current:', gameState.version);
       }
     });
 
@@ -241,7 +256,7 @@ function App() {
       setTimeout(() => setErrorMessage(''), 3000);
       return;
     }
-    socket.emit('create-room', { playerName: playerName.trim(), numPlayers, handSize, minCardsPerTurn });
+    socket.emit('create-room', { playerName: playerName.trim(), numPlayers, handSize, minCardsPerTurn, maxCard, backtrackAmount });
   };
 
   const joinRoom = () => {
@@ -261,7 +276,7 @@ function App() {
   const startGame = () => {
     if (screen === 'lobby' && isHost) {
       // Host starts multiplayer game
-      const newGame = initializeGame(numPlayers, handSize, minCardsPerTurn);
+      const newGame = initializeGame(numPlayers, handSize, minCardsPerTurn, maxCard, backtrackAmount);
       socket.emit('start-game', { roomCode, gameState: newGame });
     }
   };
@@ -364,6 +379,7 @@ function App() {
 
   const canPlayOnPile = (card, pileType) => {
     if (!gameState) return false;
+    const backtrack = gameState.backtrackAmount || 10;
     let pileTop;
     let isAscending;
     
@@ -388,7 +404,7 @@ function App() {
         return false;
     }
     
-    return isValidPlay(card, pileTop, isAscending);
+    return isValidPlay(card, pileTop, isAscending, backtrack);
   };
 
   // Menu Screen
@@ -447,6 +463,28 @@ function App() {
               />
             </label>
             
+            <label>
+              MAX CARD NUMBER:
+              <input
+                type="number"
+                min="20"
+                max="200"
+                value={maxCard}
+                onChange={(e) => setMaxCard(parseInt(e.target.value))}
+              />
+            </label>
+            
+            <label>
+              BACKTRACK AMOUNT:
+              <input
+                type="number"
+                min="5"
+                max="20"
+                value={backtrackAmount}
+                onChange={(e) => setBacktrackAmount(parseInt(e.target.value))}
+              />
+            </label>
+            
             <button onClick={createRoom} className="start-button">
               Create Room
             </button>
@@ -474,9 +512,10 @@ function App() {
             <ul>
               <li>🎯 <strong>Goal:</strong> Play all cards from the deck</li>
               <li>🃏 Each player starts with a configurable number of cards (3-10)</li>
+              <li>🔢 <strong>Card range:</strong> Configurable from 1 to max card number (20-200)</li>
               <li>⬆️ <strong>Ascending piles (×2):</strong> Play cards higher than the top card (start at 0)</li>
-              <li>⬇️ <strong>Descending piles (×2):</strong> Play cards lower than the top card (start at 100)</li>
-              <li>🔟 <strong>Special:</strong> Can also play a card exactly 10 less than an ascending pile, or 10 more than a descending pile</li>
+              <li>⬇️ <strong>Descending piles (×2):</strong> Play cards lower than the top card (start at max+1)</li>
+              <li>↩️ <strong>Backtrack move:</strong> Can play a card exactly [backtrack amount] less than ascending pile, or [backtrack amount] more than descending pile (configurable 5-20)</li>
               <li>🔄 On your turn: play minimum required cards (configurable 1-5), then click "End Turn"</li>
               <li>🎴 After playing, draw one card for each card played</li>
               <li>💡 Give custom hints anytime (no numbers allowed!)</li>
@@ -502,6 +541,8 @@ function App() {
               <p>👥 Players: {numPlayers}</p>
               <p>🃏 Cards per player: {handSize}</p>
               <p>🎯 Min. cards per turn: {minCardsPerTurn}</p>
+              <p>🔢 Max card: {maxCard}</p>
+              <p>↩️ Backtrack: {backtrackAmount}</p>
             </div>
             
             <h3>Players ({roomPlayers.length}/{numPlayers})</h3>
@@ -584,6 +625,8 @@ function App() {
                 canAcceptCard={selectedCardValue !== null && canPlayOnPile(selectedCardValue, 'ascending1')}
                 onCardDrop={() => handlePlayCard('ascending1')}
                 label="Pile 1"
+                backtrackAmount={gameState.backtrackAmount || 10}
+                maxCard={gameState.maxCard || 99}
               />
               <Pile
                 type="ascending"
@@ -591,6 +634,8 @@ function App() {
                 canAcceptCard={selectedCardValue !== null && canPlayOnPile(selectedCardValue, 'ascending2')}
                 onCardDrop={() => handlePlayCard('ascending2')}
                 label="Pile 2"
+                backtrackAmount={gameState.backtrackAmount || 10}
+                maxCard={gameState.maxCard || 99}
               />
             </div>
             <h3>⬇️ Descending Piles</h3>
@@ -601,6 +646,8 @@ function App() {
                 canAcceptCard={selectedCardValue !== null && canPlayOnPile(selectedCardValue, 'descending1')}
                 onCardDrop={() => handlePlayCard('descending1')}
                 label="Pile 1"
+                backtrackAmount={gameState.backtrackAmount || 10}
+                maxCard={gameState.maxCard || 99}
               />
               <Pile
                 type="descending"
@@ -608,6 +655,8 @@ function App() {
                 canAcceptCard={selectedCardValue !== null && canPlayOnPile(selectedCardValue, 'descending2')}
                 onCardDrop={() => handlePlayCard('descending2')}
                 label="Pile 2"
+                backtrackAmount={gameState.backtrackAmount || 10}
+                maxCard={gameState.maxCard || 99}
               />
             </div>
           </div>
