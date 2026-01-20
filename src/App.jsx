@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { io } from 'socket.io-client';
 import './App.css';
 import Pile from './engine/Pile';
@@ -33,6 +33,9 @@ function App() {
   const [errorMessage, setErrorMessage] = useState('');
   const [isConnected, setIsConnected] = useState(true);
   const [pendingActions, setPendingActions] = useState([]);
+  
+  // Track if we've already auto-skipped for the current turn
+  const autoSkipProcessedRef = useRef(null);
 
   // Retry mechanism for failed actions
   const sendGameAction = (gameState, retryCount = 0) => {
@@ -258,14 +261,22 @@ function App() {
     
     // If this player has no cards, automatically end their turn
     if (currentHand.length === 0) {
-      console.log('Auto-skipping turn - player has no cards');
-      setTimeout(() => {
-        // Create a fake endTurn that just advances to next player
-        const result = endTurn(gameState);
-        if (result.success) {
-          sendGameAction(result.newGameState);
-        }
-      }, 1000); // Small delay so the message is visible
+      // Create a unique key for this turn to prevent duplicate skips
+      const turnKey = `${gameState.currentPlayer}-${gameState.version}`;
+      
+      // Only auto-skip if we haven't already processed this exact turn
+      if (autoSkipProcessedRef.current !== turnKey) {
+        autoSkipProcessedRef.current = turnKey;
+        console.log('Auto-skipping turn - player has no cards');
+        
+        setTimeout(() => {
+          // Create a fake endTurn that just advances to next player
+          const result = endTurn(gameState);
+          if (result.success) {
+            sendGameAction(result.newGameState);
+          }
+        }, 500); // Reduced delay
+      }
     }
   }, [gameState, myPlayerIndex]);
 
