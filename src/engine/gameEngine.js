@@ -197,10 +197,13 @@ export function playCard(gameState, playerIndex, cardIndex, pileType) {
 }
 
 export function endTurn(gameState) {
+  if (gameState.gameStatus === 'won' || gameState.gameStatus === 'lost') {
+    return { success: false, message: 'Game is over' };
+  }
   const { currentPlayer, cardsPlayedThisTurn, minCardsPerTurn, hands, deck, numPlayers } = gameState;
   
-  // If current player has no cards, allow them to skip without playing
-  if (hands[currentPlayer].length === 0) {
+  // If current player has no cards AND hasn't played any cards this turn, allow them to skip
+  if (hands[currentPlayer].length === 0 && cardsPlayedThisTurn === 0) {
     // Skip to next player with cards
     let nextPlayer = (currentPlayer + 1) % numPlayers;
     let skippedPlayers = 0;

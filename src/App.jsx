@@ -255,7 +255,7 @@ function App() {
 
   // Auto-skip turn if current player has no cards
   useEffect(() => {
-    if (!gameState || myPlayerIndex !== gameState.currentPlayer) return;
+    if (!gameState || myPlayerIndex !== gameState.currentPlayer || gameState.gameStatus === 'won' || gameState.gameStatus === 'lost') return;
     
     const currentHand = gameState.hands[myPlayerIndex] || [];
     
@@ -647,110 +647,107 @@ function App() {
       {/* Show when current player has no cards but game is still ongoing */}
       {gameState.gameStatus === 'playing' && currentHand.length === 0 && myPlayerIndex === gameState.currentPlayer && (
         <div className="game-message" style={{backgroundColor: '#4CAF50', color: 'white'}}>
-          ✨ You're out of cards! Your turn is being skipped.
+          {gameState.deck.length === 0 
+            ? "✨ You're out of cards! Your turn is being skipped." 
+            : "🔄 Hand empty! Drawing new cards..."}
         </div>
       )}
-      {gameState.gameStatus === 'playing' && currentHand.length === 0 && myPlayerIndex !== gameState.currentPlayer && (
+      {gameState.gameStatus === 'playing' && currentHand.length === 0 && myPlayerIndex !== gameState.currentPlayer && gameState.deck.length === 0 && (
         <div className="game-message" style={{backgroundColor: '#2196F3', color: 'white'}}>
           ✨ You're out of cards! Waiting for others to finish...
         </div>
       )}
 
       <div className="game-container">
-        {/* First Column - Piles */}
-        <div className="piles-column">
-          <div className="piles-container">
-            <h3>⬆️ Ascending Piles</h3>
-            <div className="pile-row">
-              <Pile
-                type="ascending"
-                topCard={gameState.ascending1}
-                canAcceptCard={selectedCardValue !== null && canPlayOnPile(selectedCardValue, 'ascending1')}
-                onCardDrop={() => handlePlayCard('ascending1')}
-                label="Pile 1"
-                backtrackAmount={gameState.backtrackAmount || 10}
-                maxCard={gameState.maxCard || 99}
-              />
-              <Pile
-                type="ascending"
-                topCard={gameState.ascending2}
-                canAcceptCard={selectedCardValue !== null && canPlayOnPile(selectedCardValue, 'ascending2')}
-                onCardDrop={() => handlePlayCard('ascending2')}
-                label="Pile 2"
-                backtrackAmount={gameState.backtrackAmount || 10}
-                maxCard={gameState.maxCard || 99}
-              />
+        {/* Left Column - Main Game Area (Piles + Players) */}
+        <div className="game-main-content">
+          <div className="piles-section">
+            <div className="piles-container">
+              <div className="pile-row single-row">
+                  <Pile
+                    type="ascending"
+                    topCard={gameState.ascending1}
+                    canAcceptCard={selectedCardValue !== null && canPlayOnPile(selectedCardValue, 'ascending1')}
+                    onCardDrop={() => handlePlayCard('ascending1')}
+                    label="⬆️ Pile 1"
+                    backtrackAmount={gameState.backtrackAmount || 10}
+                    maxCard={gameState.maxCard || 99}
+                  />
+                  <Pile
+                    type="ascending"
+                    topCard={gameState.ascending2}
+                    canAcceptCard={selectedCardValue !== null && canPlayOnPile(selectedCardValue, 'ascending2')}
+                    onCardDrop={() => handlePlayCard('ascending2')}
+                    label="⬆️ Pile 2"
+                    backtrackAmount={gameState.backtrackAmount || 10}
+                    maxCard={gameState.maxCard || 99}
+                  />
+                  <Pile
+                    type="descending"
+                    topCard={gameState.descending1}
+                    canAcceptCard={selectedCardValue !== null && canPlayOnPile(selectedCardValue, 'descending1')}
+                    onCardDrop={() => handlePlayCard('descending1')}
+                    label="⬇️ Pile 1"
+                    backtrackAmount={gameState.backtrackAmount || 10}
+                    maxCard={gameState.maxCard || 99}
+                  />
+                  <Pile
+                    type="descending"
+                    topCard={gameState.descending2}
+                    canAcceptCard={selectedCardValue !== null && canPlayOnPile(selectedCardValue, 'descending2')}
+                    onCardDrop={() => handlePlayCard('descending2')}
+                    label="⬇️ Pile 2"
+                    backtrackAmount={gameState.backtrackAmount || 10}
+                    maxCard={gameState.maxCard || 99}
+                  />
+              </div>
             </div>
-            <h3>⬇️ Descending Piles</h3>
-            <div className="pile-row">
-              <Pile
-                type="descending"
-                topCard={gameState.descending1}
-                canAcceptCard={selectedCardValue !== null && canPlayOnPile(selectedCardValue, 'descending1')}
-                onCardDrop={() => handlePlayCard('descending1')}
-                label="Pile 1"
-                backtrackAmount={gameState.backtrackAmount || 10}
-                maxCard={gameState.maxCard || 99}
-              />
-              <Pile
-                type="descending"
-                topCard={gameState.descending2}
-                canAcceptCard={selectedCardValue !== null && canPlayOnPile(selectedCardValue, 'descending2')}
-                onCardDrop={() => handlePlayCard('descending2')}
-                label="Pile 2"
-                backtrackAmount={gameState.backtrackAmount || 10}
-                maxCard={gameState.maxCard || 99}
-              />
-            </div>
+            
+            {/* End Turn Button and Status */}
+            {myPlayerIndex === gameState.currentPlayer && (
+              <div>
+                <p style={{fontSize: '12px', color: '#666'}}>
+                  Cards played: {gameState.cardsPlayedThisTurn || 0} / Min required: {gameState.deck.length === 0 ? 1 : (gameState.minCardsPerTurn || 0)}
+                  {gameState.deck.length === 0 && ' (Deck empty!)'}
+                </p>
+                {gameState.cardsPlayedThisTurn >= (gameState.deck.length === 0 ? 1 : gameState.minCardsPerTurn) && (
+                  <button 
+                    className="end-turn-button" 
+                    onClick={handleEndTurn}
+                  >
+                    ✓ End Turn
+                  </button>
+                )}
+              </div>
+            )}
           </div>
-          
-          {/* End Turn Button */}
-          {myPlayerIndex === gameState.currentPlayer && (
-            <div>
-              {/* Debug info */}
-              <p style={{fontSize: '12px', color: '#666'}}>
-                Cards played: {gameState.cardsPlayedThisTurn || 0} / Min required: {gameState.deck.length === 0 ? 1 : (gameState.minCardsPerTurn || 0)}
-                {gameState.deck.length === 0 && ' (Deck empty!)'}
-              </p>
-              {gameState.cardsPlayedThisTurn >= (gameState.deck.length === 0 ? 1 : gameState.minCardsPerTurn) && (
-                <button 
-                  className="end-turn-button" 
-                  onClick={handleEndTurn}
-                >
-                  ✓ End Turn
-                </button>
-              )}
-            </div>
-          )}
-        </div>
 
-        {/* Second Column - Players' Hands */}
-        <div className="players-column">
-          <div className="players-container">
-            {gameState.hands && Array.isArray(gameState.hands) && gameState.hands.map((hand, index) => {
-              const player = roomPlayers.find((_, idx) => idx === index);
-              const playerDisplayName = player ? player.name : `Player ${index + 1}`;
-              
-              return (
-                <PlayerHand
-                  key={index}
-                  playerIndex={index}
-                  playerName={playerDisplayName}
-                  hand={index === myPlayerIndex ? hand : []}
-                  isCurrentPlayer={index === gameState.currentPlayer}
-                  selectedCard={index === myPlayerIndex ? selectedCard : null}
-                  onCardSelect={handleCardSelect}
-                  cardCount={hand.length}
-                  isMyHand={index === myPlayerIndex}
-                />
-              );
-            })}
+          <div className="players-section">
+            <div className="players-container">
+              {gameState.hands && Array.isArray(gameState.hands) && gameState.hands.map((hand, index) => {
+                const player = roomPlayers.find((_, idx) => idx === index);
+                const playerDisplayName = player ? player.name : `Player ${index + 1}`;
+                
+                return (
+                  <PlayerHand
+                    key={index}
+                    playerIndex={index}
+                    playerName={playerDisplayName}
+                    hand={index === myPlayerIndex ? hand : []}
+                    isCurrentPlayer={index === gameState.currentPlayer}
+                    selectedCard={index === myPlayerIndex ? selectedCard : null}
+                    onCardSelect={handleCardSelect}
+                    cardCount={hand.length}
+                    isMyHand={index === myPlayerIndex}
+                  />
+                );
+              })}
+            </div>
           </div>
         </div>
 
-        {/* Third Column - Hints */}
-        <div className="hints-column">
-          {/* Hint System */}
+        {/* Right Column - Sidebar (Hints & Log) */}
+        <div className="game-sidebar">
           <div className="hint-section">
             <h4 className="hint-title">💡 Send Hints to Other Players</h4>
             <p className="hint-description">Give teammates clues about your cards (no numbers allowed)</p>
@@ -763,7 +760,6 @@ function App() {
                   value={customHint}
                   onChange={(e) => {
                     const value = e.target.value;
-                    // Block numbers from being typed
                     if (!/\d/.test(value)) {
                       setCustomHint(value);
                     }

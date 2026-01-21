@@ -11,7 +11,7 @@ function Pile({ type, topCard, onCardDrop, canAcceptCard, label, backtrackAmount
   return (
     <div className={`pile ${type}`}>
       <div className="pile-header">
-        <h3>{pileLabel} {direction}</h3>
+        <h3>{pileLabel}</h3>
         <p className="pile-rule">
           {isAscending ? 'Play > ' : 'Play < '}{topCard}
         </p>
