@@ -34,6 +34,23 @@ function App() {
   const [isConnected, setIsConnected] = useState(true);
   const [pendingActions, setPendingActions] = useState([]);
   
+  // Update isHost based on player list position
+  useEffect(() => {
+    if (roomPlayers.length > 0) {
+      // The first player in the list is always the host
+      const firstPlayer = roomPlayers[0];
+      // Check if I am the host based on socket ID or player index
+      const isSocketMatch = socket.id && firstPlayer.id === socket.id;
+      const isIndexMatch = myPlayerIndex !== null && firstPlayer.playerIndex === myPlayerIndex;
+      
+      if (isSocketMatch || isIndexMatch) {
+        if (!isHost) setIsHost(true);
+      } else {
+        if (isHost) setIsHost(false);
+      }
+    }
+  }, [roomPlayers, myPlayerIndex, isHost]);
+
   // Track if we've already auto-skipped for the current turn
   const autoSkipProcessedRef = useRef(null);
 
@@ -594,9 +611,9 @@ function App() {
               <p className="waiting-text">Waiting for more players to join...</p>
             )}
             
-            {isHost && roomPlayers.length === numPlayers && (
-              <button onClick={startGame} className="start-button">
-                Start Game
+            {isHost && (
+              <button onClick={startGame} className="start-button" style={{ width: '100%' }}>
+                Start Game ({roomPlayers.length}/{numPlayers} Players)
               </button>
             )}
             
