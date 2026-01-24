@@ -55,10 +55,27 @@ export function hasLegalMove(hand, piles, backtrackAmount = 10) {
   );
 }
 
-export function checkLossCondition(hands, piles, currentPlayer, backtrackAmount = 10) {
-  // Game is lost if the current player has no legal move
+export function checkLossCondition(gameState) {
+  const { hands, currentPlayer, backtrackAmount = 10, cardsPlayedThisTurn, minCardsPerTurn, deck } = gameState;
+  
+  // Rule: If you can end your turn, you haven't lost.
+  const requiredCards = deck.length === 0 ? 1 : minCardsPerTurn;
+  if (cardsPlayedThisTurn >= requiredCards) {
+    return false;
+  }
+
+  // Otherwise, game is lost if the current player has no legal move
   const currentHand = hands[currentPlayer];
-  return currentHand.length > 0 && !hasLegalMove(currentHand, piles, backtrackAmount);
+  if (currentHand.length === 0) return false; // Hand empty, waiting for refill or skip
+
+  const piles = {
+    ascending1: gameState.ascending1,
+    ascending2: gameState.ascending2,
+    descending1: gameState.descending1,
+    descending2: gameState.descending2
+  };
+
+  return !hasLegalMove(currentHand, piles, backtrackAmount);
 }
 
 export function checkWinCondition(hands, deck) {
@@ -179,17 +196,9 @@ export function playCard(gameState, playerIndex, cardIndex, pileType) {
     playLog: [...gameState.playLog, logEntry]
   };
   
-  // Check win/loss conditions
-  const piles = {
-    ascending1: newAscending1,
-    ascending2: newAscending2,
-    descending1: newDescending1,
-    descending2: newDescending2
-  };
-  
   if (checkWinCondition(newHands, newDeck)) {
     newGameState.gameStatus = 'won';
-  } else if (checkLossCondition(newHands, piles, nextPlayer, backtrackAmount)) {
+  } else if (checkLossCondition(newGameState)) {
     newGameState.gameStatus = 'lost';
   }
   

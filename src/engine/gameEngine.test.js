@@ -132,6 +132,65 @@ describe('Game Engine', () => {
         });
     });
 
+    describe('checkLossCondition', () => {
+        let gameState;
+        
+        beforeEach(() => {
+            gameState = GameEngine.initializeGame(2, 4);
+            gameState.minCardsPerTurn = 2;
+            gameState.cardsPlayedThisTurn = 0;
+            gameState.currentPlayer = 0;
+            // Ensure deck has cards
+            gameState.deck = [100, 101];
+        });
+
+        it('should return false if player can end turn (met min cards requirement)', () => {
+            // Player played 2 cards (min 2)
+            gameState.cardsPlayedThisTurn = 2;
+            
+            // Hand has cards but NO legal moves
+            gameState.hands[0] = [50];
+            gameState.ascending1 = 90;
+            gameState.ascending2 = 90;
+            gameState.descending1 = 10;
+            gameState.descending2 = 10;
+            // 50 cant play on >90 or <10
+            
+            // Should NOT be lost because they can simply End Turn
+            expect(GameEngine.checkLossCondition(gameState)).toBe(false);
+        });
+
+        it('should return true if player CANNOT end turn and has NO moves', () => {
+            // Player played only 1 card (min 2)
+            gameState.cardsPlayedThisTurn = 1;
+            
+            // Hand has cards but NO legal moves
+            gameState.hands[0] = [50];
+            gameState.ascending1 = 90; 
+            gameState.ascending2 = 90;
+            gameState.descending1 = 10;
+            gameState.descending2 = 10;
+            
+            expect(GameEngine.checkLossCondition(gameState)).toBe(true);
+        });
+
+        it('should return false if player CANNOT end turn but HAS moves', () => {
+            gameState.cardsPlayedThisTurn = 1;
+            
+            // Hand has valid move
+            gameState.hands[0] = [95]; 
+            gameState.ascending1 = 90; // 95 > 90 valid
+            
+            expect(GameEngine.checkLossCondition(gameState)).toBe(false);
+        });
+
+         it('should return false if hand is empty (waiting for refill)', () => {
+            gameState.hands[0] = [];
+            
+            expect(GameEngine.checkLossCondition(gameState)).toBe(false);
+        });
+    });
+
     describe('playCard', () => {
         let gameState;
         
