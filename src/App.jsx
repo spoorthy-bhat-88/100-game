@@ -757,14 +757,16 @@ function App() {
           <div className="players-section">
             <div className="players-container">
               {gameState.hands && Array.isArray(gameState.hands) && gameState.hands.map((hand, index) => {
-                const player = roomPlayers.find((_, idx) => idx === index);
+                // Find player by explicit playerIndex, not array index
+                const player = roomPlayers.find(p => p.playerIndex === index);
                 const playerDisplayName = player ? player.name : `Player ${index + 1}`;
+                const isDisconnected = player && player.connected === false;
                 
                 return (
                   <PlayerHand
                     key={index}
                     playerIndex={index}
-                    playerName={playerDisplayName}
+                    playerName={playerDisplayName + (isDisconnected ? ' (Disconnected)' : '')}
                     hand={index === myPlayerIndex ? hand : []}
                     isCurrentPlayer={index === gameState.currentPlayer}
                     selectedCard={index === myPlayerIndex ? selectedCard : null}

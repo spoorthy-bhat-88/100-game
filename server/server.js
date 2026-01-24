@@ -218,7 +218,8 @@ io.on('connection', (socket) => {
       players: [{
         id: socket.id,
         name: playerName,
-        playerIndex: 0
+        playerIndex: 0,
+        connected: true
       }],
       gameState: null,
       started: false,
@@ -262,12 +263,22 @@ io.on('connection', (socket) => {
       return;
     }
     
-    const playerIndex = room.players.length;
+    // Assign lowest available player index
+    const takenIndices = new Set(room.players.map(p => p.playerIndex));
+    let playerIndex = 0;
+    while (takenIndices.has(playerIndex)) {
+      playerIndex++;
+    }
+    
     room.players.push({
       id: socket.id,
       name: playerName,
-      playerIndex
+      playerIndex,
+      connected: true
     });
+    
+    // Sort players by index to maintain consistent order
+    room.players.sort((a, b) => a.playerIndex - b.playerIndex);
     
     socket.join(roomCode);
     socket.emit('room-joined', { roomCode, playerIndex });
@@ -300,6 +311,7 @@ io.on('connection', (socket) => {
     if (player) {
       player.id = socket.id;
       player.name = playerName;
+      player.connected = true;
     } else {
       // Player not in room, try to add them back if there's space
       if (room.players.length >= room.numPlayers) {
@@ -309,8 +321,12 @@ io.on('connection', (socket) => {
       room.players.push({
         id: socket.id,
         name: playerName,
-        playerIndex
+        playerIndex,
+        connected: true
       });
+      
+      // Sort players by index to maintain consistent order
+      room.players.sort((a, b) => a.playerIndex - b.playerIndex);
     }
     
     socket.join(roomCode);
@@ -424,31 +440,37 @@ io.on('connection', (socket) => {
       const playerIndex = room.players.findIndex(p => p.id === socket.id);
       
       if (playerIndex !== -1) {
-        room.players.splice(playerIndex, 1);
+        // If game has started, just mark as disconnected
+        if (room.started) {
+            room.players[playerIndex].connected = false;
+            console.log(`Player ${room.players[playerIndex].name} disconnected from active game in room ${roomCode}`);
+        } else {
+            // Lobby mode: remove them completely so others can join/take spot
+            room.players.splice(playerIndex, 1);
+            console.log(`Player left lobby ${roomCode}`);
+        }
         
         // Keep room alive for 3 hours even if empty
-        console.log(`Player left room ${roomCode}. Room will expire in ${Math.round((ROOM_LIFETIME_MS - (Date.now() - room.createdAt)) / 1000 / 60)} minutes`);
+        console.log(`Room will expire in ${Math.round((ROOM_LIFETIME_MS - (Date.now() - room.createdAt)) / 1000 / 60)} minutes`);
         
-        if (room.players.length === 0) {
-          console.log(`Room ${roomCode} is now empty but will be kept for rejoining`);
+        if (room.players.length === 0 || room.players.every(p => !p.connected)) {
+          console.log(`Room ${roomCode} is now empty (or all disconnected)`);
         }
         
-        // Update remaining players
-        if (room.players.length > 0) {
-          io.to(roomCode).emit('room-update', { 
-            players: room.players,
-            numPlayers: room.numPlayers,
-            started: room.started
-          });
+        // Update remaining players (even if disconnected, we want to update the UI for others)
+        io.to(roomCode).emit('room-update', { 
+          players: room.players,
+          numPlayers: room.numPlayers,
+          started: room.started
+        });
           
-          if (room.started) {
+        if (room.started) {
             io.to(roomCode).emit('player-disconnected', { 
-              message: 'A player disconnected' 
+              message: `Player disconnected` 
             });
-          }
         }
         
-        // Save updated room state (or empty room for rejoining)
+        // Save updated room state
         await saveRoom(roomCode);
         break;
       }
