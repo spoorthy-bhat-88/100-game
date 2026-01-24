@@ -6,7 +6,7 @@
   border: 2px solid rgba(255, 255, 255, 0.2);
   transition: all 0.3s ease;
   box-shadow: 
-    0 4px 20px rgba(0, 0, 0, 0.15),
+    0 4px 20px rgba(0, 0, 0, 0.3),
     inset 0 1px 0 rgba(255, 255, 255, 0.8);
   width: 100%;
   max-width: 500px;
@@ -36,8 +36,12 @@
 }
 
 .player-hand.current-player {
-  background:rgba(255, 255, 255, 0.85);
-  border: 2px solid #141415;
+  background: rgba(16, 185, 129, 0.1);
+  border: 2px solid #10b981;
+  box-shadow: 
+    0 8px 32px rgba(16, 185, 129, 0.4),
+    0 0 0 4px rgba(16, 185, 129, 0.1);
+  animation: currentPlayerGlow 2s ease-in-out infinite;
 }
 
 .player-hand.current-player .player-info h3 {
@@ -47,14 +51,44 @@
 }
 
 .player-hand.current-player.other-player {
-  background: rgba(255, 255, 255, 0.85);
-  border: 2px solid #0a0a0a;
+  background: rgba(59, 130, 246, 0.1);
+  border: 2px solid #3b82f6;
+  box-shadow: 
+    0 8px 32px rgba(59, 130, 246, 0.4),
+    0 0 0 4px rgba(59, 130, 246, 0.1);
+  animation: otherPlayerTurnGlow 2s ease-in-out infinite;
 }
 
 .player-hand.current-player.other-player .player-info h3 {
   color: #0f172a;
   font-weight: 900;
   text-shadow: 0 1px 3px rgba(255, 255, 255, 0.9);
+}
+
+@keyframes currentPlayerGlow {
+  0%, 100% {
+    box-shadow: 
+      0 8px 32px rgba(16, 185, 129, 0.4),
+      0 0 0 4px rgba(16, 185, 129, 0.1);
+  }
+  50% {
+    box-shadow: 
+      0 8px 40px rgba(16, 185, 129, 0.6),
+      0 0 0 6px rgba(16, 185, 129, 0.15);
+  }
+}
+
+@keyframes otherPlayerTurnGlow {
+  0%, 100% {
+    box-shadow: 
+      0 8px 32px rgba(59, 130, 246, 0.4),
+      0 0 0 4px rgba(59, 130, 246, 0.1);
+  }
+  50% {
+    box-shadow: 
+      0 8px 40px rgba(59, 130, 246, 0.6),
+      0 0 0 6px rgba(59, 130, 246, 0.15);
+  }
 }
 
 .player-info {
@@ -74,7 +108,7 @@
 }
 
 .turn-indicator {
-  background: #3b82f6;
+  background: #10b981;
   color: white;
   padding: 4px 12px;
   border-radius: 20px;

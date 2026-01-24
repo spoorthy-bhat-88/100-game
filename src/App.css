@@ -77,7 +77,7 @@ body::after {
   padding: 3rem 2.5rem;
   border-radius: 2rem;
   box-shadow: 
-    0 25px 80px rgba(0, 0, 0, 0.3),
+    0 25px 80px rgba(0, 0, 0, 0.6),
     0 0 1px rgba(255, 255, 255, 0.5),
     inset 0 1px 1px rgba(255, 255, 255, 0.3),
     inset 0 -1px 1px rgba(0, 0, 0, 0.2);
@@ -139,13 +139,13 @@ body::after {
 .join-button {
   background: linear-gradient(135deg, #10b981 0%, #059669 100%);
   box-shadow: 
-    0 10px 40px rgba(16, 185, 129, 0.3),
+    0 10px 40px rgba(16, 185, 129, 0.5),
     inset 0 1px 1px rgba(255, 255, 255, 0.3);
 }
 
 .join-button:hover {
   box-shadow: 
-    0 20px 50px rgba(16, 185, 129, 0.4),
+    0 20px 50px rgba(16, 185, 129, 0.6),
     inset 0 1px 1px rgba(255, 255, 255, 0.3);
   transform: translateY(-0.25rem) scale(1.02);
 }
@@ -170,7 +170,7 @@ body::after {
   justify-content: space-around;
   gap: 1.25rem;
   box-shadow: 
-    0 10px 40px rgba(102, 126, 234, 0.2),
+    0 10px 40px rgba(102, 126, 234, 0.4),
     inset 0 1px 1px rgba(255, 255, 255, 0.3);
   position: relative;
   overflow: hidden;
@@ -321,7 +321,7 @@ body::after {
   cursor: pointer;
   transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   box-shadow: 
-    0 10px 40px rgba(99, 102, 241, 0.3),
+    0 10px 40px rgba(99, 102, 241, 0.5),
     0 0 0 0 rgba(99, 102, 241, 0.5),
     inset 0 1px 1px rgba(255, 255, 255, 0.3);
   letter-spacing: 0.0625em;
@@ -393,14 +393,14 @@ body::after {
 
 /* Game Screen - Optimized for single viewport */
 .game-header {
-  background: #f4f3ee; /* Eggshell */
+  background: #f4f4f3; /* Eggshell */
   backdrop-filter: blur(20px);
   padding: 0.5rem 1.5rem;
   border-radius: 0;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
   border-bottom: 1px solid rgba(0, 0, 0, 0.1);
   flex-shrink: 0;
   position: relative;
@@ -433,8 +433,10 @@ body::after {
   padding: 8px 16px;
   border-radius: 12px;
   color: #a5b4fc;
-  border: 1px solid rgba(69, 71, 238, 1);
+  border: 1px solid rgba(99, 102, 241, 0.3);
   white-space: nowrap;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 
@@ -448,7 +450,7 @@ body::after {
   cursor: pointer;
   transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   box-shadow: 
-    0 6px 20px rgba(239, 68, 68, 0.2),
+    0 6px 20px rgba(239, 68, 68, 0.4),
     inset 0 1px 1px rgba(255, 255, 255, 0.3);
   font-size: 13px;
   text-transform: uppercase;
@@ -470,7 +472,7 @@ body::after {
   margin: 12px 2rem;
   animation: messageAppear 0.8s cubic-bezier(0.16, 1, 0.3, 1);
   box-shadow: 
-    0 12px 48px rgba(0, 0, 0, 0.2),
+    0 12px 48px rgba(0, 0, 0, 0.4),
     inset 0 1px 1px rgba(255, 255, 255, 0.3);
   letter-spacing: 1px;
   text-transform: uppercase;
@@ -604,19 +606,6 @@ body::after {
 
 .end-turn-button {
   margin-top: 1rem;
-  padding: 1.25rem 2rem;
-  width: 100%;
-  font-size: 1rem;
-  font-weight: 800;
-  background: #f4f3ee; /* Lighter Eggshell */;
-  color: rgb(1, 0, 0);
-  border: 1px solid rgb(1, 0, 0);
-  border-radius: 1rem;
-  cursor: pointer;
-  position: relative;
-  overflow: hidden;
-  letter-spacing: 0.05em;
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 
@@ -640,7 +629,7 @@ body::after {
 
 .end-turn-button:hover {
   transform: translateY(-3px) scale(1.05);
-  box-shadow: 0 12px 35px rgba(10, 10, 10, 0.2);
+  box-shadow: 0 12px 35px rgba(16, 185, 129, 0.6);
 }
 
 .end-turn-button:active {
@@ -694,7 +683,12 @@ body::after {
   backdrop-filter: blur(40px);
   padding: 16px;
   border-radius: 16px;
-  border: 1px solid black;
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    0 0 1px rgba(255, 255, 255, 0.3),
+    inset 0 1px 1px rgba(255, 255, 255, 0.2);
+  animation: slideUp 0.5s ease 0.2s both;
+  border: 1px solid rgba(255, 255, 255, 0.15);
   flex: 0 auto;
   display: flex;
   flex-direction: column;
@@ -711,7 +705,11 @@ body::after {
   left: 0;
   right: 0;
   height: 2px;
-
+  background: linear-gradient(90deg, 
+    transparent,
+    rgba(139, 92, 246, 0.8),
+    transparent
+  );
 }
 
 .hint-title {
@@ -766,7 +764,7 @@ body::after {
   cursor: pointer;
   transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   box-shadow: 
-    0 6px 20px rgba(99, 102, 241, 0.2),
+    0 6px 20px rgba(99, 102, 241, 0.4),
     inset 0 1px 1px rgba(255, 255, 255, 0.3);
   font-size: 12px;
   text-transform: uppercase;
@@ -838,7 +836,7 @@ body::after {
   font-size: 14px;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.15);
+  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
   white-space: nowrap;
 }
 
@@ -962,14 +960,16 @@ body::after {
 
 .log-entry {
   padding: 8px 12px;
+  border-radius: 8px;
   font-size: 12px;
   font-weight: 600;
   animation: hintSlide 0.3s ease;
 }
 
 .log-entry.play {
-  background: transparent;
-  border-bottom: 1px solid #0b0b0c;
+  background: #dbeafe;
+  color: #1e40af;
+  border-left: 3px solid #3b82f6;
 }
 
 .log-entry.hint {
@@ -1175,7 +1175,7 @@ body::after {
 
 /* Game Screen */
 .game-header {
-  background: #f4f4f3; /* Eggshell */
+  background: #F0EAD6; /* Eggshell */
   backdrop-filter: blur(20px);
   padding: 0.5rem 1.5rem;
   border-radius: 0;
@@ -1183,7 +1183,7 @@ body::after {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
   border-bottom: 1px solid rgba(0, 0, 0, 0.1);
   animation: slideUp 0.5s ease;
   width: 100%;
