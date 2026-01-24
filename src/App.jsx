@@ -312,6 +312,11 @@ function App() {
   };
 
   const returnToLobby = () => {
+    // Notify server we are leaving
+    if (roomCode) {
+      socket.emit('leave-room', { roomCode });
+    }
+
     // Clear localStorage when intentionally leaving
     localStorage.removeItem('roomCode');
     localStorage.removeItem('playerIndex');
@@ -598,6 +603,16 @@ function App() {
             {!isHost && (
               <p className="waiting-text">Waiting for host to start the game...</p>
             )}
+            
+            <div style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'center', width: '100%' }}>
+              <button 
+                onClick={returnToLobby} 
+                className="new-game-button"
+                style={{ background: '#94a3b8', boxShadow: '0 4px 14px rgba(148, 163, 184, 0.4)' }}
+              >
+                Exit Lobby
+              </button>
+            </div>
           </div>
         </div>
       </div>

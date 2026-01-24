@@ -388,6 +388,33 @@ io.on('connection', (socket) => {
     socket.to(roomCode).emit('hint-received', { hint });
   });
 
+  // Leave room
+  socket.on('leave-room', async ({ roomCode }) => {
+    const room = gameRooms.get(roomCode);
+    if (!room) return;
+
+    console.log(`User ${socket.id} leaving room ${roomCode}`);
+    
+    // Remove player
+    const playerIndex = room.players.findIndex(p => p.id === socket.id);
+    if (playerIndex !== -1) {
+      room.players.splice(playerIndex, 1);
+      
+      socket.leave(roomCode);
+      
+      // Update remaining players
+      if (room.players.length > 0) {
+        io.to(roomCode).emit('room-update', { 
+          players: room.players,
+          numPlayers: room.numPlayers,
+          started: room.started
+        });
+      }
+      
+      await saveRoom(roomCode);
+    }
+  });
+
   // Handle disconnect
   socket.on('disconnect', async () => {
     console.log('User disconnected:', socket.id);
