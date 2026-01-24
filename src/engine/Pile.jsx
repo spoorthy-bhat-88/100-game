@@ -9,7 +9,7 @@ function Pile({ type, topCard, onCardDrop, canAcceptCard, label, backtrackAmount
   const showAlternate = alternateValue >= 1 && alternateValue <= maxCard;
   
   return (
-    <div className={`pile ${type}`}>
+    <div className={`pile ${type}`} data-testid={`pile-${type}`}>
       <div className="pile-header">
         <h3>{pileLabel}</h3>
         <p className="pile-rule">
