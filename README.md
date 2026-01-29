@@ -3,7 +3,7 @@
 A real-time multiplayer card game built with React and Socket.io.
 
 ## Play Online
-[Add your deployed URL here after deployment]
+https://spoorthy-bhat-88.github.io/100-game/
 
 ## Local Development
 

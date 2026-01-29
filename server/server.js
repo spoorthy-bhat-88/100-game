@@ -4,6 +4,7 @@ import { Server } from 'socket.io';
 import cors from 'cors';
 import { MongoClient } from 'mongodb';
 import dotenv from 'dotenv';
+import { RoomManager } from './RoomManager.js';
 
 // Load environment variables from .env file
 dotenv.config();
@@ -29,11 +30,8 @@ const io = new Server(httpServer, {
   }
 });
 
-// Store active game rooms
-const gameRooms = new Map();
-
-// Room expiration settings
-const ROOM_LIFETIME_MS = 3 * 60 * 60 * 1000; // 3 hours in milliseconds
+// Initialize Room Manager
+const roomManager = new RoomManager();
 
 // MongoDB connection
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/hundred-game';
@@ -98,7 +96,7 @@ async function loadGameRooms() {
     console.log('📥 Loading game rooms from MongoDB...');
     const rooms = await roomsCollection.find({}).toArray();
     rooms.forEach(room => {
-      gameRooms.set(room.code, room);
+      roomManager.rooms.set(room.code, room);
     });
     console.log(`✅ Loaded ${rooms.length} game room(s) from database`);
     if (rooms.length > 0) {
@@ -119,7 +117,7 @@ async function saveRoom(roomCode) {
       return;
     }
     
-    const room = gameRooms.get(roomCode);
+    const room = roomManager.getRoom(roomCode);
     if (!room) {
       console.log(`⚠️  Room ${roomCode} not found in memory - cannot save`);
       return;
@@ -178,16 +176,14 @@ connectDB();
 // Cleanup expired rooms every 10 minutes
 setInterval(async () => {
   console.log('🧹 Running room cleanup...');
-  const now = Date.now();
+  const expiredRooms = roomManager.getExpiredRooms();
   let expiredCount = 0;
   
-  for (const [roomCode, room] of gameRooms.entries()) {
-    if (room.createdAt && (now - room.createdAt) > ROOM_LIFETIME_MS) {
-      console.log(`⏰ Room ${roomCode} expired (created ${new Date(room.createdAt).toLocaleString()})`);
-      gameRooms.delete(roomCode);
-      await deleteRoom(roomCode);
-      expiredCount++;
-    }
+  for (const roomCode of expiredRooms) {
+    console.log(`⏰ Room ${roomCode} expired`);
+    roomManager.deleteRoom(roomCode);
+    await deleteRoom(roomCode);
+    expiredCount++;
   }
   
   if (expiredCount > 0) {
@@ -197,36 +193,22 @@ setInterval(async () => {
   }
 }, 10 * 60 * 1000); // Run every 10 minutes
 
-// Generate random room code
-function generateRoomCode() {
-  return Math.random().toString(36).substring(2, 8).toUpperCase();
-}
-
 io.on('connection', (socket) => {
   console.log('User connected:', socket.id);
 
   // Create a new game room
   socket.on('create-room', async ({ playerName, numPlayers, handSize, minCardsPerTurn, maxCard, backtrackAmount }) => {
-    const roomCode = generateRoomCode();
-    const room = {
-      code: roomCode,
-      numPlayers,
-      handSize: handSize || 4,
-      minCardsPerTurn: minCardsPerTurn || 2,
-      maxCard: maxCard || 99,
-      backtrackAmount: backtrackAmount || 10,
-      players: [{
-        id: socket.id,
-        name: playerName,
-        playerIndex: 0,
-        connected: true
-      }],
-      gameState: null,
-      started: false,
-      createdAt: Date.now() // Timestamp for room expiration
-    };
+    const room = roomManager.createRoom({
+      playerName, 
+      socketId: socket.id,
+      numPlayers, 
+      handSize, 
+      minCardsPerTurn, 
+      maxCard, 
+      backtrackAmount
+    });
     
-    gameRooms.set(roomCode, room);
+    const roomCode = room.code;
     socket.join(roomCode);
     
     socket.emit('room-created', { roomCode, playerIndex: 0 });
@@ -246,39 +228,17 @@ io.on('connection', (socket) => {
 
   // Join an existing room
   socket.on('join-room', async ({ roomCode, playerName }) => {
-    const room = gameRooms.get(roomCode);
-    
-    if (!room) {
-      socket.emit('error', { message: 'Room not found' });
-      return;
-    }
-    
-    if (room.started) {
-      socket.emit('error', { message: 'Game already started' });
-      return;
-    }
-    
-    if (room.players.length >= room.numPlayers) {
-      socket.emit('error', { message: 'Room is full' });
-      return;
-    }
-    
-    // Assign lowest available player index
-    const takenIndices = new Set(room.players.map(p => p.playerIndex));
-    let playerIndex = 0;
-    while (takenIndices.has(playerIndex)) {
-      playerIndex++;
-    }
-    
-    room.players.push({
-      id: socket.id,
-      name: playerName,
-      playerIndex,
-      connected: true
+    const result = roomManager.addPlayerToRoom(roomCode, {
+      socketId: socket.id,
+      playerName
     });
     
-    // Sort players by index to maintain consistent order
-    room.players.sort((a, b) => a.playerIndex - b.playerIndex);
+    if (result.error) {
+      socket.emit('error', { message: result.error });
+      return;
+    }
+    
+    const { room, playerIndex } = result;
     
     socket.join(roomCode);
     socket.emit('room-joined', { roomCode, playerIndex });
@@ -298,36 +258,18 @@ io.on('connection', (socket) => {
 
   // Rejoin an existing room
   socket.on('rejoin-room', ({ roomCode, playerIndex, playerName }) => {
-    const room = gameRooms.get(roomCode);
+    const result = roomManager.rejoinPlayer(roomCode, {
+      socketId: socket.id,
+      playerName,
+      playerIndex
+    });
     
-    if (!room) {
-      socket.emit('error', { message: 'Room not found - game may have ended' });
+    if (result.error) {
+      socket.emit('error', { message: result.error });
       return;
     }
     
-    // Find and update the player's socket ID
-    const player = room.players.find(p => p.playerIndex === playerIndex);
-    
-    if (player) {
-      player.id = socket.id;
-      player.name = playerName;
-      player.connected = true;
-    } else {
-      // Player not in room, try to add them back if there's space
-      if (room.players.length >= room.numPlayers) {
-        socket.emit('error', { message: 'Cannot rejoin - room is full' });
-        return;
-      }
-      room.players.push({
-        id: socket.id,
-        name: playerName,
-        playerIndex,
-        connected: true
-      });
-      
-      // Sort players by index to maintain consistent order
-      room.players.sort((a, b) => a.playerIndex - b.playerIndex);
-    }
+    const { room } = result;
     
     socket.join(roomCode);
     
@@ -350,16 +292,22 @@ io.on('connection', (socket) => {
 
   // Start the game
   socket.on('start-game', async ({ roomCode, gameState }) => {
-    const room = gameRooms.get(roomCode);
+    const room = roomManager.getRoom(roomCode);
     
     if (!room) {
       socket.emit('error', { message: 'Room not found' });
       return;
     }
     
-    if (room.players[0].id !== socket.id) {
-      socket.emit('error', { message: 'Only host can start the game' });
-      return;
+    // Check if player is host (index 0) OR if they are the first player in the list
+    const playerIndex = room.players.findIndex(p => p.id === socket.id);
+    if (playerIndex === -1 || room.players[playerIndex].playerIndex !== 0) {
+       // Graceful fallback: if player index 0 is gone, maybe allow the first connected player to start? 
+       // For now, strict check on playerIndex 0 as per existing logic, but robust check against list
+       if (room.players[0].id !== socket.id) {
+         socket.emit('error', { message: 'Only host can start the game' });
+         return;
+       }
     }
     
     room.gameState = gameState;
@@ -372,7 +320,7 @@ io.on('connection', (socket) => {
 
   // Sync game state with validation
   socket.on('game-action', async ({ roomCode, gameState }, callback) => {
-    const room = gameRooms.get(roomCode);
+    const room = roomManager.getRoom(roomCode);
     
     if (!room) {
       console.log('game-action: Room not found:', roomCode);
@@ -406,74 +354,61 @@ io.on('connection', (socket) => {
 
   // Leave room
   socket.on('leave-room', async ({ roomCode }) => {
-    const room = gameRooms.get(roomCode);
+    const room = roomManager.removePlayer(roomCode, socket.id);
     if (!room) return;
 
     console.log(`User ${socket.id} leaving room ${roomCode}`);
+      
+    socket.leave(roomCode);
     
-    // Remove player
-    const playerIndex = room.players.findIndex(p => p.id === socket.id);
-    if (playerIndex !== -1) {
-      room.players.splice(playerIndex, 1);
-      
-      socket.leave(roomCode);
-      
-      // Update remaining players
-      if (room.players.length > 0) {
-        io.to(roomCode).emit('room-update', { 
-          players: room.players,
-          numPlayers: room.numPlayers,
-          started: room.started
-        });
-      }
-      
-      await saveRoom(roomCode);
+    // Update remaining players
+    if (room.players.length > 0) {
+      io.to(roomCode).emit('room-update', { 
+        players: room.players,
+        numPlayers: room.numPlayers,
+        started: room.started
+      });
     }
+    
+    await saveRoom(roomCode);
   });
 
   // Handle disconnect
   socket.on('disconnect', async () => {
     console.log('User disconnected:', socket.id);
     
-    // Remove player from any rooms they were in
-    for (const [roomCode, room] of gameRooms.entries()) {
-      const playerIndex = room.players.findIndex(p => p.id === socket.id);
-      
-      if (playerIndex !== -1) {
-        // If game has started, just mark as disconnected
-        if (room.started) {
-            room.players[playerIndex].connected = false;
-            console.log(`Player ${room.players[playerIndex].name} disconnected from active game in room ${roomCode}`);
-        } else {
-            // Lobby mode: remove them completely so others can join/take spot
-            room.players.splice(playerIndex, 1);
-            console.log(`Player left lobby ${roomCode}`);
-        }
-        
-        // Keep room alive for 3 hours even if empty
-        console.log(`Room will expire in ${Math.round((ROOM_LIFETIME_MS - (Date.now() - room.createdAt)) / 1000 / 60)} minutes`);
-        
-        if (room.players.length === 0 || room.players.every(p => !p.connected)) {
-          console.log(`Room ${roomCode} is now empty (or all disconnected)`);
-        }
-        
-        // Update remaining players (even if disconnected, we want to update the UI for others)
-        io.to(roomCode).emit('room-update', { 
-          players: room.players,
-          numPlayers: room.numPlayers,
-          started: room.started
-        });
-          
-        if (room.started) {
-            io.to(roomCode).emit('player-disconnected', { 
-              message: `Player disconnected` 
-            });
-        }
-        
-        // Save updated room state
-        await saveRoom(roomCode);
-        break;
+    const affectedRooms = roomManager.handleDisconnect(socket.id);
+
+    for (const { roomCode, room } of affectedRooms) {
+      if (room.started) {
+          console.log(`Player disconnected from active game in room ${roomCode}`);
+      } else {
+          console.log(`Player left lobby ${roomCode}`);
       }
+      
+      // Keep room alive for 3 hours even if empty
+      const timeLeft = roomManager.ROOM_LIFETIME_MS - (Date.now() - room.createdAt);
+      console.log(`Room will expire in ${Math.round(timeLeft / 1000 / 60)} minutes`);
+      
+      if (room.players.length === 0 || room.players.every(p => !p.connected)) {
+        console.log(`Room ${roomCode} is now empty (or all disconnected)`);
+      }
+      
+      // Update remaining players (even if disconnected, we want to update the UI for others)
+      io.to(roomCode).emit('room-update', { 
+        players: room.players,
+        numPlayers: room.numPlayers,
+        started: room.started
+      });
+        
+      if (room.started) {
+          io.to(roomCode).emit('player-disconnected', { 
+            message: `Player disconnected` 
+          });
+      }
+      
+      // Save updated room state
+      await saveRoom(roomCode);
     }
   });
 });
@@ -494,8 +429,9 @@ process.on('SIGINT', async () => {
   // Save all active rooms to database if connected
   if (roomsCollection) {
     console.log('Saving active rooms...');
-    for (const [roomCode] of gameRooms.entries()) {
-      await saveRoom(roomCode);
+    const rooms = roomManager.getAllRooms();
+    for (const room of rooms) {
+      await saveRoom(room.code);
     }
     console.log('All rooms saved.');
   }
@@ -509,8 +445,9 @@ process.on('SIGTERM', async () => {
   // Save all active rooms to database if connected
   if (roomsCollection) {
     console.log('Saving active rooms...');
-    for (const [roomCode] of gameRooms.entries()) {
-      await saveRoom(roomCode);
+    const rooms = roomManager.getAllRooms();
+    for (const room of rooms) {
+      await saveRoom(room.code);
     }
     console.log('All rooms saved.');
   }
