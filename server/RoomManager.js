@@ -10,12 +10,12 @@ export class RoomManager {
   }
 
   createRoom(creationParams) {
-    const { playerName, socketId, numPlayers, handSize, minCardsPerTurn, maxCard, backtrackAmount } = creationParams;
+    const { playerName, socketId, handSize, minCardsPerTurn, maxCard, backtrackAmount } = creationParams;
     const roomCode = this.generateRoomCode();
     
     const room = {
       code: roomCode,
-      numPlayers: numPlayers || 2,
+      numPlayers: null, // Will be set when game starts based on actual number of players
       handSize: handSize || 4,
       minCardsPerTurn: minCardsPerTurn || 2,
       maxCard: maxCard || 99,
@@ -47,7 +47,6 @@ export class RoomManager {
     const room = this.getRoom(roomCode);
     if (!room) return { error: 'Room not found' };
     if (room.started) return { error: 'Game already started' };
-    if (room.players.length >= room.numPlayers) return { error: 'Room is full' };
 
     const { socketId, playerName } = playerInfo;
 
@@ -86,12 +85,7 @@ export class RoomManager {
     } 
     
     // Fallback: try to add if not found but space available
-    if (room.players.length >= room.numPlayers) {
-      return { error: 'Cannot rejoin - room is full' };
-    }
-
-    // Add as new player preserving index if possible, else logic from addPlayer should handle calls
-    // But since this is specific rejoin with index:
+    // Since numPlayers is not a limit anymore, just add the player
     room.players.push({
       id: socketId,
       name: playerName,
