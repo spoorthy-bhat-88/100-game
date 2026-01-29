@@ -303,7 +303,7 @@ function App() {
       setTimeout(() => setErrorMessage(''), 3000);
       return;
     }
-    socket.emit('create-room', { playerName: playerName.trim(), numPlayers, handSize, minCardsPerTurn, maxCard, backtrackAmount });
+    socket.emit('create-room', { playerName: playerName.trim(), handSize, minCardsPerTurn, maxCard, backtrackAmount });
   };
 
   const joinRoom = () => {
@@ -322,8 +322,8 @@ function App() {
 
   const startGame = () => {
     if (screen === 'lobby' && isHost) {
-      // Host starts multiplayer game
-      const newGame = initializeGame(numPlayers, handSize, minCardsPerTurn, maxCard, backtrackAmount);
+      // Host starts multiplayer game using actual player count from room
+      const newGame = initializeGame(roomPlayers.length, handSize, minCardsPerTurn, maxCard, backtrackAmount);
       socket.emit('start-game', { roomCode, gameState: newGame });
     }
   };
@@ -483,17 +483,6 @@ function App() {
             </label>
             
             <label>
-              NUMBER OF PLAYERS:
-              <input
-                type="number"
-                min="2"
-                max="10"
-                value={numPlayers}
-                onChange={(e) => setNumPlayers(parseInt(e.target.value))}
-              />
-            </label>
-            
-            <label>
               CARDS PER PLAYER:
               <input
                 type="number"
@@ -590,14 +579,13 @@ function App() {
           
           <div className="lobby-info">
             <div className="game-settings">
-              <p>👥 Players: {numPlayers}</p>
               <p>🃏 Cards per player: {handSize}</p>
               <p>🎯 Min. cards per turn: {minCardsPerTurn}</p>
               <p>🔢 Max card: {maxCard}</p>
               <p>↩️ Backtrack: {backtrackAmount}</p>
             </div>
             
-            <h3>Players ({roomPlayers.length}/{numPlayers})</h3>
+            <h3>Players ({roomPlayers.length} joined)</h3>
             <ul className="player-list">
               {roomPlayers.map((player, idx) => (
                 <li key={player.id}>
@@ -607,14 +595,14 @@ function App() {
               ))}
             </ul>
             
-            {roomPlayers.length < numPlayers && (
-              <p className="waiting-text">Waiting for more players to join...</p>
+            {isHost && roomPlayers.length >= 2 && (
+              <button onClick={startGame} className="start-button" style={{ width: '100%' }}>
+                Start Game ({roomPlayers.length} Players)
+              </button>
             )}
             
-            {isHost && (
-              <button onClick={startGame} className="start-button" style={{ width: '100%' }}>
-                Start Game ({roomPlayers.length}/{numPlayers} Players)
-              </button>
+            {isHost && roomPlayers.length < 2 && (
+              <p className="waiting-text">Need at least 2 players to start...</p>
             )}
             
             {!isHost && (

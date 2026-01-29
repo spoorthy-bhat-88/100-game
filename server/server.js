@@ -310,12 +310,15 @@ io.on('connection', (socket) => {
        }
     }
     
+    // Set numPlayers to the actual number of players in the room
+    room.numPlayers = room.players.length;
+    
     room.gameState = gameState;
     room.started = true;
     
     io.to(roomCode).emit('game-started', { gameState });
     await saveRoom(roomCode); // Save to database
-    console.log(`Game started in room ${roomCode}`);
+    console.log(`Game started in room ${roomCode} with ${room.numPlayers} players`);
   });
 
   // Sync game state with validation
